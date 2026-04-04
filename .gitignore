@@ -1,0 +1,17 @@
+# Unity
+Npyu002Unity/[Ll]ibrary/
+Npyu002Unity/[Tt]emp/
+Npyu002Unity/[Oo]bj/
+Npyu002Unity/[Bb]uild/
+Npyu002Unity/[Bb]uilds/
+Npyu002Unity/[Ll]ogs/
+Npyu002Unity/[Uu]ser[Ss]ettings/
+Npyu002Unity/MemoryCaptures/
+Npyu002Unity/*.csproj
+Npyu002Unity/*.sln
+
+# VS Code
+Npyu002Unity/.vscode/
+
+# Claude
+.claude/
