@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 using ActionGame.AI;
 
 namespace ActionGame
@@ -23,8 +24,9 @@ namespace ActionGame
         [SerializeField] float attackRange    = 2f;
 
         [Header("Combat")]
-        [SerializeField] float attackDamage  = 10f;
-        [SerializeField] float attackCooldown = 1.5f;
+        [SerializeField] float attackDamage    = 10f;
+        [SerializeField] float attackCooldown  = 1.5f;
+        [SerializeField] float attackHitDelay  = 0.4f;  // アニメの"殴る瞬間"までの秒数
 
         [Header("Patrol")]
         [SerializeField] Transform[] patrolPoints;
@@ -33,16 +35,21 @@ namespace ActionGame
         [Header("Score")]
         [SerializeField] int scoreOnDeath = 100;
 
+        /// <summary>false のとき全エネミーの AI を停止する（デフォルト OFF）</summary>
+        public static bool AIEnabled = false;
+
         Transform player;
         NavMeshAgent agent;
         Health health;
+        EnemyAnimationController animCtrl;
         BTNode root;
         BTBlackboard bb;
 
         void Start()
         {
-            agent  = GetComponent<NavMeshAgent>();
-            health = GetComponent<Health>();
+            agent    = GetComponent<NavMeshAgent>();
+            health   = GetComponent<Health>();
+            animCtrl = GetComponent<EnemyAnimationController>();
 
             // Prefab 由来の missing 参照を除去してからタグで補完
             patrolPoints = System.Array.FindAll(
@@ -67,6 +74,14 @@ namespace ActionGame
         void Update()
         {
             if (!health.IsAlive || player == null) return;
+
+            if (!AIEnabled)
+            {
+                agent.isStopped = true;
+                return;
+            }
+
+            agent.isStopped = false;
             root.Evaluate();
         }
 
@@ -87,6 +102,19 @@ namespace ActionGame
             root.AddChild(new Patrol(this));
 
             return root;
+        }
+
+        IEnumerator ApplyAttackDamageDelayed(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (player == null || !health.IsAlive) yield break;
+            var hp = player.GetComponent<Health>();
+            if (hp != null && hp.IsAlive)
+            {
+                hp.TakeDamage(attackDamage);
+                AudioManager.Instance?.PlayHit();
+                EffectManager.Instance?.SpawnHit(player.position);
+            }
         }
 
         void OnDeath()
@@ -154,13 +182,8 @@ namespace ActionGame
                 if (Time.time >= self.bb.Get<float>("nextAttack", 0f))
                 {
                     self.bb.Set("nextAttack", Time.time + self.attackCooldown);
-                    var hp = self.player.GetComponent<Health>();
-                    if (hp != null && hp.IsAlive)
-                    {
-                        hp.TakeDamage(self.attackDamage);
-                        AudioManager.Instance?.PlayHit();
-                        EffectManager.Instance?.SpawnHit(self.player.position);
-                    }
+                    self.animCtrl?.TriggerAttack();
+                    self.StartCoroutine(self.ApplyAttackDamageDelayed(self.attackHitDelay));
                 }
                 return State = NodeState.Running;
             }

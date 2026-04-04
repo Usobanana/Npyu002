@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 namespace ActionGame
 {
@@ -9,10 +10,11 @@ namespace ActionGame
     public class PlayerCombat : MonoBehaviour
     {
         [Header("Attack")]
-        [SerializeField] float attackDamage  = 30f;
-        [SerializeField] float attackRange   = 2f;
-        [SerializeField] float attackOffset  = 1f;
+        [SerializeField] float attackDamage   = 30f;
+        [SerializeField] float attackRange    = 2f;
+        [SerializeField] float attackOffset   = 1f;
         [SerializeField] float attackCooldown = 0.6f;
+        [SerializeField] float attackHitDelay = 0.3f;  // アニメの"殴る瞬間"までの秒数
 
         float nextAttackTime;
 
@@ -30,9 +32,17 @@ namespace ActionGame
             if (Time.time < nextAttackTime) return;
             nextAttackTime = Time.time + attackCooldown;
 
-            // SE
+            // アニメ再生・SE は即時
             AudioManager.Instance?.PlayAttack();
             OnAttack?.Invoke();
+
+            // ダメージ判定はアニメの"殴る瞬間"に合わせて遅延
+            StartCoroutine(ApplyAttackDamageDelayed(attackHitDelay));
+        }
+
+        IEnumerator ApplyAttackDamageDelayed(float delay)
+        {
+            yield return new WaitForSeconds(delay);
 
             var center = transform.position + transform.forward * attackOffset;
             var hits   = Physics.OverlapSphere(center, attackRange);
