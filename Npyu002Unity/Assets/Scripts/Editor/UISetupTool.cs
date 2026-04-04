@@ -395,6 +395,176 @@ namespace ActionGame.Editor
 
         // ---- Main Menu UI ----
 
+        [MenuItem("Tools/ActionGame/Rebuild Main Menu UI")]
+        public static void RebuildMainMenuUI()
+        {
+            // 既存 Canvas / MainMenuUI を削除して作り直す
+            var oldCanvas = GameObject.Find("Canvas");
+            if (oldCanvas != null) Undo.DestroyObjectImmediate(oldCanvas);
+            var oldMenuUI = GameObject.Find("MainMenuUI");
+            if (oldMenuUI != null) Undo.DestroyObjectImmediate(oldMenuUI);
+
+            // EventSystem
+            if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                var es = new GameObject("EventSystem");
+                es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                var t = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                if (t != null) es.AddComponent(t); else es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
+            }
+
+            // Canvas
+            var canvasGO = new GameObject("Canvas");
+            Undo.RegisterCreatedObjectUndo(canvasGO, "Create Canvas");
+            var canvas = canvasGO.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasGO.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            canvasGO.AddComponent<GraphicRaycaster>();
+
+            // ── 背景レイヤー ───────────────────────────────────────
+            // 最下層: ほぼ黒に近い濃紺
+            var bgBase = MakeImage(canvasGO, "BgBase", Vector2.zero, Vector2.one,
+                Vector2.zero, Vector2.zero, new Color(0.04f, 0.04f, 0.10f, 1f));
+
+            // 上部グラデ風: 半透明の暗い帯
+            var bgTop = MakeImage(canvasGO, "BgTop",
+                new Vector2(0, 0.65f), new Vector2(1, 1),
+                Vector2.zero, Vector2.zero, new Color(0.08f, 0.08f, 0.20f, 0.6f));
+
+            // 下部グラデ風: わずかに明るい帯
+            var bgBottom = MakeImage(canvasGO, "BgBottom",
+                new Vector2(0, 0), new Vector2(1, 0.25f),
+                Vector2.zero, Vector2.zero, new Color(0.06f, 0.03f, 0.12f, 0.5f));
+
+            // ── タイトルエリア ─────────────────────────────────────
+            // シャドウ (右下 4px ずらし、濃いオレンジ)
+            var titleShadow = CreateText(canvasGO, "TitleShadow", "ACTION GAME", 110);
+            PlaceCenter(titleShadow, new Vector2(4f, 256f), new Vector2(900f, 130f));
+            titleShadow.GetComponent<Text>().color = new Color(0.6f, 0.2f, 0f, 0.9f);
+
+            // 本体テキスト (明るいオレンジ/ゴールド)
+            var titleText = CreateText(canvasGO, "Title", "ACTION GAME", 110);
+            PlaceCenter(titleText, new Vector2(0f, 260f), new Vector2(900f, 130f));
+            titleText.GetComponent<Text>().color = new Color(1f, 0.75f, 0.15f, 1f);
+
+            // 区切り線 (RectTransform を最初から付与して作る)
+            var divider = MakeCenterImage(canvasGO, "Divider",
+                new Vector2(0f, 185f), new Vector2(480f, 3f),
+                new Color(1f, 0.75f, 0.15f, 0.7f));
+
+            // サブタイトル
+            var sub = CreateText(canvasGO, "Subtitle", "— BEAT ALL ENEMIES —", 30);
+            PlaceCenter(sub, new Vector2(0f, 143f), new Vector2(740f, 44f));
+            sub.GetComponent<Text>().color = new Color(0.75f, 0.75f, 0.85f, 1f);
+
+            // ── センターパネル (ボタン背景) ────────────────────────
+            var panel = MakeCenterImage(canvasGO, "ButtonPanel",
+                new Vector2(0f, -55f), new Vector2(320f, 200f),
+                new Color(0f, 0f, 0f, 0.35f));
+
+            // START ボタン
+            var startBtn = CreateStyledButton(panel, "StartButton", "▶  START",
+                new Vector2(0f, 52f), new Vector2(268f, 68f),
+                new Color(0.10f, 0.65f, 0.35f, 0.95f), 32);
+
+            // QUIT ボタン
+            var quitBtn = CreateStyledButton(panel, "QuitButton", "✕  QUIT",
+                new Vector2(0f, -52f), new Vector2(268f, 68f),
+                new Color(0.55f, 0.12f, 0.12f, 0.95f), 32);
+
+            // ── フッター ───────────────────────────────────────────
+            // BEST スコア (下中央)
+            int hi = UnityEngine.PlayerPrefs.GetInt("HighScore", 0);
+            var bestScore = CreateText(canvasGO, "BestScore", $"BEST  {hi:D6}", 28);
+            var bsRT = bestScore.GetComponent<RectTransform>();
+            bsRT.anchorMin = bsRT.anchorMax = new Vector2(0.5f, 0f);
+            bsRT.anchoredPosition = new Vector2(0f, 55f);
+            bsRT.sizeDelta = new Vector2(360f, 40f);
+            bestScore.GetComponent<Text>().color = new Color(0.9f, 0.9f, 0.6f, 1f);
+
+            // バージョン (右下)
+            var ver = CreateText(canvasGO, "Version", "v1.0", 20);
+            var verRT = ver.GetComponent<RectTransform>();
+            verRT.anchorMin = verRT.anchorMax = new Vector2(1f, 0f);
+            verRT.anchoredPosition = new Vector2(-20f, 20f);
+            verRT.sizeDelta = new Vector2(100f, 30f);
+            ver.GetComponent<Text>().color = new Color(0.5f, 0.5f, 0.5f, 0.8f);
+            ver.GetComponent<Text>().alignment = TextAnchor.LowerRight;
+
+            // ── MainMenuUI コンポーネント ──────────────────────────
+            var menuGO = new GameObject("MainMenuUI");
+            Undo.RegisterCreatedObjectUndo(menuGO, "Create MainMenuUI");
+            menuGO.AddComponent<ActionGame.MainMenuUI>();
+
+            EditorUtility.SetDirty(canvasGO);
+            EditorUtility.SetDirty(menuGO);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+            Debug.Log("[UISetupTool] Main Menu UI rebuilt.");
+        }
+
+        // 全画面/アンカー指定の Image 生成ヘルパー
+        static GameObject MakeImage(GameObject parent, string name,
+            Vector2 anchorMin, Vector2 anchorMax,
+            Vector2 offsetMin, Vector2 offsetMax, Color color)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent.transform, false);
+            var rt = go.AddComponent<RectTransform>();
+            rt.anchorMin = anchorMin; rt.anchorMax = anchorMax;
+            rt.offsetMin = offsetMin; rt.offsetMax = offsetMax;
+            go.AddComponent<Image>().color = color;
+            return go;
+        }
+
+        // センターアンカーの Image GO を作る（RectTransform を最初から付与）
+        static GameObject MakeCenterImage(GameObject parent, string name,
+            Vector2 anchoredPosition, Vector2 sizeDelta, Color color)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent.transform, false);
+            var rt = go.AddComponent<RectTransform>();  // SetParent 直後に追加 → 確実に置換される
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPosition;
+            rt.sizeDelta = sizeDelta;
+            go.AddComponent<Image>().color = color;
+            return go;
+        }
+
+        // センターアンカーで anchoredPosition / sizeDelta を正しくセットする
+        static void PlaceCenter(GameObject go, Vector2 anchoredPosition, Vector2 sizeDelta)
+        {
+            var rt = go.GetComponent<RectTransform>() ?? go.AddComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPosition;
+            rt.sizeDelta = sizeDelta;
+        }
+
+        // 見栄えのよいボタン (センター基点)
+        static GameObject CreateStyledButton(GameObject parent, string name, string label,
+            Vector2 pos, Vector2 size, Color color, int fontSize)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent.transform, false);
+            var rt = go.AddComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+            go.AddComponent<Image>().color = color;
+            go.AddComponent<Button>();
+
+            var txt = CreateText(go, "Label", label, fontSize);
+            var txtRT = txt.GetComponent<RectTransform>();
+            txtRT.anchorMin = Vector2.zero; txtRT.anchorMax = Vector2.one;
+            txtRT.sizeDelta = Vector2.zero;
+            return go;
+        }
+
         [MenuItem("Tools/ActionGame/Setup Main Menu UI")]
         public static void SetupMainMenuUI()
         {

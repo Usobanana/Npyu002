@@ -13,8 +13,8 @@ namespace ActionGame
     {
         void Start()
         {
-            Bind("Canvas/Background/StartButton", OnStart);
-            Bind("Canvas/Background/QuitButton",  OnQuit);
+            Bind("Canvas/ButtonPanel/StartButton", OnStart);
+            Bind("Canvas/ButtonPanel/QuitButton",  OnQuit);
         }
 
         void Bind(string path, UnityEngine.Events.UnityAction action)
