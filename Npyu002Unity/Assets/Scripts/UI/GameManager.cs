@@ -5,15 +5,18 @@ namespace ActionGame
 {
     /// <summary>
     /// ゲームの勝敗状態を管理するシングルトン。
-    /// Inspector で playerHealth, enemyHealth をアサイン。
+    /// 複数 Enemy に対応: タグ "Enemy" を持つ全 GameObject を自動検索。
+    /// 全員倒すと WIN。
     /// </summary>
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance { get; private set; }
 
-        [Header("References")]
+        [Header("Player")]
         [SerializeField] Health playerHealth;
-        [SerializeField] Health enemyHealth;
+
+        int enemyAliveCount;
+        bool gameEnded;
 
         void Awake()
         {
@@ -23,21 +26,35 @@ namespace ActionGame
 
         void Start()
         {
+            // Player
             if (playerHealth != null)
             {
                 playerHealth.OnDeath += OnPlayerDeath;
                 GameUI.Instance?.SetupPlayerHP(playerHealth);
             }
 
-            if (enemyHealth != null)
+            // Enemy: タグ "Enemy" で全自動検索
+            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            enemyAliveCount = enemies.Length;
+
+            for (int i = 0; i < enemies.Length; i++)
             {
-                enemyHealth.OnDeath += OnEnemyDeath;
-                GameUI.Instance?.SetupEnemyHP(enemyHealth);
+                var hp = enemies[i].GetComponent<Health>();
+                if (hp == null) continue;
+
+                hp.OnDeath += OnEnemyDeath;
+
+                // 最初の敵だけ HP バーに表示
+                if (i == 0) GameUI.Instance?.SetupEnemyHP(hp);
             }
+
+            Debug.Log($"[Game] {enemyAliveCount} enemies found.");
         }
 
         void OnPlayerDeath()
         {
+            if (gameEnded) return;
+            gameEnded = true;
             Debug.Log("[Game] Game Over");
             GameUI.Instance?.ShowGameOver();
             Time.timeScale = 0f;
@@ -45,9 +62,17 @@ namespace ActionGame
 
         void OnEnemyDeath()
         {
-            Debug.Log("[Game] You Win!");
-            GameUI.Instance?.ShowWin();
-            Time.timeScale = 0f;
+            if (gameEnded) return;
+            enemyAliveCount--;
+            Debug.Log($"[Game] Enemy defeated. Remaining: {enemyAliveCount}");
+
+            if (enemyAliveCount <= 0)
+            {
+                gameEnded = true;
+                Debug.Log("[Game] You Win!");
+                GameUI.Instance?.ShowWin();
+                Time.timeScale = 0f;
+            }
         }
 
         public void Restart()

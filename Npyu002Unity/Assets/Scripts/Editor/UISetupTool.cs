@@ -310,6 +310,58 @@ namespace ActionGame.Editor
             Debug.Log("[UISetupTool] EventSystem input module switched to InputSystemUIInputModule.");
         }
 
+        [MenuItem("Tools/ActionGame/Setup Polish Components")]
+        public static void SetupPolishComponents()
+        {
+            // CameraShake → Main Camera
+            var cam = Camera.main;
+            if (cam != null) AddIfMissing<ActionGame.CameraShake>(cam.gameObject);
+
+            // EffectManager → GameManagers
+            var gm = GameObject.Find("GameManagers");
+            if (gm != null) AddIfMissing<ActionGame.EffectManager>(gm);
+
+            // Prefab フォルダ作成
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
+                AssetDatabase.CreateFolder("Assets", "Prefabs");
+
+            // Enemy Prefab 作成
+            var enemy = GameObject.Find("Enemy");
+            if (enemy != null)
+            {
+                string prefabPath = "Assets/Prefabs/Enemy.prefab";
+                bool exists = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null;
+                if (!exists)
+                {
+                    PrefabUtility.SaveAsPrefabAsset(enemy, prefabPath);
+                    Debug.Log("[UISetupTool] Enemy.prefab created.");
+                }
+            }
+
+            // Enemy を 2 体追加（既存と合わせて合計 3 体）
+            var enemyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy.prefab");
+            if (enemyPrefab != null)
+            {
+                SpawnEnemy(enemyPrefab, new Vector3(8f, 0f, 8f),  "Enemy2");
+                SpawnEnemy(enemyPrefab, new Vector3(-8f, 0f, 12f), "Enemy3");
+                Debug.Log("[UISetupTool] Enemy2, Enemy3 placed.");
+            }
+
+            if (gm != null) EditorUtility.SetDirty(gm);
+            if (cam != null) EditorUtility.SetDirty(cam.gameObject);
+            Debug.Log("[UISetupTool] Polish components setup complete.");
+        }
+
+        static void SpawnEnemy(GameObject prefab, Vector3 pos, string name)
+        {
+            if (GameObject.Find(name) != null) return;
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            go.name = name;
+            go.transform.position = pos;
+            go.tag = "Enemy";
+            Undo.RegisterCreatedObjectUndo(go, $"Create {name}");
+        }
+
         [MenuItem("Tools/ActionGame/Wire GameManager")]
         public static void WireGameManager()
         {

@@ -38,7 +38,29 @@ namespace ActionGame
             cc  = GetComponent<CharacterController>();
             cam = Camera.main != null ? Camera.main.transform : null;
 
-            GetComponent<Health>().OnDeath += () => SetAlive(false);
+            var health = GetComponent<Health>();
+            health.OnDeath += () => SetAlive(false);
+            health.OnDeath += OnPlayerDeath;
+        }
+
+        void OnPlayerDeath()
+        {
+            AudioManager.Instance?.PlayPlayerDeath();
+            EffectManager.Instance?.SpawnPlayerDeath(transform.position);
+            StartCoroutine(DeathFall());
+        }
+
+        System.Collections.IEnumerator DeathFall()
+        {
+            float t = 0f;
+            var startRot = transform.rotation;
+            var fallRot  = Quaternion.Euler(0f, transform.eulerAngles.y, -90f);
+            while (t < 0.6f)
+            {
+                t += Time.unscaledDeltaTime;
+                transform.rotation = Quaternion.Slerp(startRot, fallRot, t / 0.6f);
+                yield return null;
+            }
         }
 
         void Start()

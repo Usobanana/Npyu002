@@ -96,6 +96,7 @@ namespace ActionGame
 
             AudioManager.Instance?.PlayEnemyDeath();
             ScoreManager.Instance?.AddScore(scoreOnDeath);
+            EffectManager.Instance?.SpawnEnemyDeath(transform.position);
 
             Debug.Log($"[Enemy] Defeated! +{scoreOnDeath}pts");
             Invoke(nameof(DisableSelf), 1.5f);

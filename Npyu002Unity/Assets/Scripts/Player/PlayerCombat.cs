@@ -44,6 +44,7 @@ namespace ActionGame
                 {
                     hp.TakeDamage(attackDamage);
                     AudioManager.Instance?.PlayHit();
+                    EffectManager.Instance?.SpawnHit(hit.transform.position);
                     hitCount++;
                 }
             }
