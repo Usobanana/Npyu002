@@ -1,12 +1,12 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace ActionGame
 {
     /// <summary>
     /// Player の移動・ジャンプ・三人称カメラ制御。
-    /// 新 Input System (Keyboard / Mouse) を使用。
-    /// 必要コンポーネント: CharacterController
+    /// 入力は InputHandler から取得（PC / Mobile / Gamepad 共通）。
+    /// モバイルではカメラが Player の向きを自動追従する。
+    /// 必要コンポーネント: CharacterController, Health
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(Health))]
@@ -21,6 +21,7 @@ namespace ActionGame
         [SerializeField] float mouseSensitivity = 0.2f;
         [SerializeField] float cameraDistance = 5f;
         [SerializeField] float cameraHeight = 1.5f;
+        [SerializeField] float cameraAutoFollowSpeed = 5f;   // モバイル時の追従速度
 
         CharacterController cc;
         Transform cam;
@@ -29,19 +30,24 @@ namespace ActionGame
         float pitch = 25f;
         bool isAlive = true;
 
+        // モバイル判定（ビルド時の簡易判定）
+        bool IsMobile => Application.isMobilePlatform;
+
         void Awake()
         {
-            cc = GetComponent<CharacterController>();
+            cc  = GetComponent<CharacterController>();
             cam = Camera.main != null ? Camera.main.transform : null;
 
-            var hp = GetComponent<Health>();
-            hp.OnDeath += () => SetAlive(false);
+            GetComponent<Health>().OnDeath += () => SetAlive(false);
         }
 
         void Start()
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            if (!IsMobile)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible   = false;
+            }
         }
 
         void Update()
@@ -55,11 +61,23 @@ namespace ActionGame
 
         void UpdateCamera()
         {
-            if (cam == null || Mouse.current == null) return;
+            if (cam == null) return;
 
-            var delta = Mouse.current.delta.ReadValue() * mouseSensitivity;
-            yaw   += delta.x;
-            pitch  = Mathf.Clamp(pitch - delta.y, -15f, 60f);
+            if (IsMobile)
+            {
+                // モバイル: Player の向きにカメラを自動追従
+                yaw   = Mathf.LerpAngle(yaw, transform.eulerAngles.y, cameraAutoFollowSpeed * Time.deltaTime);
+                pitch = 25f;
+            }
+            else
+            {
+                // PC: マウスでカメラ回転
+                var delta = UnityEngine.InputSystem.Mouse.current != null
+                    ? UnityEngine.InputSystem.Mouse.current.delta.ReadValue() * mouseSensitivity
+                    : Vector2.zero;
+                yaw   += delta.x;
+                pitch  = Mathf.Clamp(pitch - delta.y, -15f, 60f);
+            }
 
             var rot = Quaternion.Euler(pitch, yaw, 0f);
             cam.position = transform.position + rot * new Vector3(0f, cameraHeight, -cameraDistance);
@@ -70,18 +88,14 @@ namespace ActionGame
 
         void UpdateMovement()
         {
-            if (Keyboard.current == null || cam == null) return;
+            if (cam == null || InputHandler.Instance == null) return;
 
-            float h = (Keyboard.current.dKey.isPressed ? 1f : 0f)
-                    - (Keyboard.current.aKey.isPressed ? 1f : 0f);
-            float v = (Keyboard.current.wKey.isPressed ? 1f : 0f)
-                    - (Keyboard.current.sKey.isPressed ? 1f : 0f);
+            var input = InputHandler.Instance.MoveInput;
 
-            // カメラ方向基準で移動
             var camForward = cam.forward; camForward.y = 0f; camForward.Normalize();
             var camRight   = cam.right;   camRight.y   = 0f; camRight.Normalize();
 
-            var moveDir = (camForward * v + camRight * h).normalized;
+            var moveDir = (camForward * input.y + camRight * input.x).normalized;
 
             if (moveDir.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.Slerp(transform.rotation,
@@ -91,7 +105,7 @@ namespace ActionGame
             if (cc.isGrounded)
             {
                 verticalVelocity.y = -2f;
-                if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                if (InputHandler.Instance.JumpPressed)
                     verticalVelocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
             }
             verticalVelocity.y += gravity * Time.deltaTime;
@@ -107,7 +121,7 @@ namespace ActionGame
             if (!alive)
             {
                 Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                Cursor.visible   = true;
             }
         }
     }

@@ -6,19 +6,13 @@ namespace ActionGame
 {
     /// <summary>
     /// Behavior Tree ベースの Enemy AI。
+    /// 撃破時に AudioManager で SE 再生、ScoreManager でスコア加算。
     ///
     /// BT 構造:
     ///   Selector (Root)
-    ///   ├─ Sequence [攻撃]
-    ///   │    ├─ IsInAttackRange (Condition)
-    ///   │    └─ Attack (Action)
-    ///   ├─ Sequence [追跡]
-    ///   │    ├─ IsInDetectionRange (Condition)
-    ///   │    └─ Chase (Action)
-    ///   └─ Patrol (Action / Idle)
-    ///
-    /// 必要コンポーネント: NavMeshAgent, Health
-    /// NavMesh は事前にベイクが必要 (Window > AI > Navigation > Bake)
+    ///   ├─ Sequence [攻撃]  IsInAttackRange → AttackPlayer
+    ///   ├─ Sequence [追跡]  IsInDetectionRange → ChasePlayer
+    ///   └─ Patrol / Idle
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(Health))]
@@ -26,15 +20,18 @@ namespace ActionGame
     {
         [Header("Detection")]
         [SerializeField] float detectionRange = 12f;
-        [SerializeField] float attackRange = 2f;
+        [SerializeField] float attackRange    = 2f;
 
         [Header("Combat")]
-        [SerializeField] float attackDamage = 10f;
+        [SerializeField] float attackDamage  = 10f;
         [SerializeField] float attackCooldown = 1.5f;
 
         [Header("Patrol")]
         [SerializeField] Transform[] patrolPoints;
         [SerializeField] float patrolWaitTime = 2f;
+
+        [Header("Score")]
+        [SerializeField] int scoreOnDeath = 100;
 
         Transform player;
         NavMeshAgent agent;
@@ -47,10 +44,21 @@ namespace ActionGame
             agent  = GetComponent<NavMeshAgent>();
             health = GetComponent<Health>();
 
+            // PatrolPoints が未設定の場合はタグで自動検索
+            if (patrolPoints == null || patrolPoints.Length == 0)
+            {
+                var pts = GameObject.FindGameObjectsWithTag("PatrolPoint");
+                if (pts.Length > 0)
+                {
+                    patrolPoints = new Transform[pts.Length];
+                    for (int i = 0; i < pts.Length; i++) patrolPoints[i] = pts[i].transform;
+                }
+            }
+
             var playerGO = GameObject.FindGameObjectWithTag("Player");
             player = playerGO != null ? playerGO.transform : null;
 
-            bb = new BTBlackboard();
+            bb   = new BTBlackboard();
             root = BuildTree();
 
             health.OnDeath += OnDeath;
@@ -66,22 +74,17 @@ namespace ActionGame
         {
             var root = new BTSelector();
 
-            // --- 攻撃 Sequence ---
             var attackSeq = new BTSequence();
             attackSeq.AddChild(new IsInRange(this, attackRange));
             attackSeq.AddChild(new AttackPlayer(this));
 
-            // --- 追跡 Sequence ---
             var chaseSeq = new BTSequence();
             chaseSeq.AddChild(new IsInRange(this, detectionRange));
             chaseSeq.AddChild(new ChasePlayer(this));
 
-            // --- パトロール / 待機 ---
-            var patrol = new Patrol(this);
-
             root.AddChild(attackSeq);
             root.AddChild(chaseSeq);
-            root.AddChild(patrol);
+            root.AddChild(new Patrol(this));
 
             return root;
         }
@@ -89,9 +92,12 @@ namespace ActionGame
         void OnDeath()
         {
             agent.isStopped = true;
-            agent.enabled = false;
-            Debug.Log("[Enemy] Defeated!");
-            // 少し待って非表示（視覚フィードバック）
+            agent.enabled   = false;
+
+            AudioManager.Instance?.PlayEnemyDeath();
+            ScoreManager.Instance?.AddScore(scoreOnDeath);
+
+            Debug.Log($"[Enemy] Defeated! +{scoreOnDeath}pts");
             Invoke(nameof(DisableSelf), 1.5f);
         }
 
@@ -106,30 +112,25 @@ namespace ActionGame
         }
 
         // =====================================================================
-        // BT Nodes (private inner classes)
+        // BT Nodes
         // =====================================================================
 
-        /// <summary>Player との距離チェック</summary>
         class IsInRange : BTNode
         {
-            readonly EnemyBT self;
-            readonly float range;
+            readonly EnemyBT self; readonly float range;
             public IsInRange(EnemyBT e, float r) { self = e; range = r; }
-
             public override NodeState Evaluate()
             {
                 if (self.player == null) return State = NodeState.Failure;
-                float dist = Vector3.Distance(self.transform.position, self.player.position);
-                return State = dist <= range ? NodeState.Success : NodeState.Failure;
+                return State = Vector3.Distance(self.transform.position, self.player.position) <= range
+                    ? NodeState.Success : NodeState.Failure;
             }
         }
 
-        /// <summary>Player を追跡する</summary>
         class ChasePlayer : BTNode
         {
             readonly EnemyBT self;
             public ChasePlayer(EnemyBT e) { self = e; }
-
             public override NodeState Evaluate()
             {
                 if (!self.agent.enabled) return State = NodeState.Failure;
@@ -139,73 +140,63 @@ namespace ActionGame
             }
         }
 
-        /// <summary>停止して Player を攻撃する</summary>
         class AttackPlayer : BTNode
         {
             readonly EnemyBT self;
             public AttackPlayer(EnemyBT e) { self = e; }
-
             public override NodeState Evaluate()
             {
                 if (!self.agent.enabled) return State = NodeState.Failure;
                 self.agent.isStopped = true;
                 self.transform.LookAt(self.player);
 
-                float nextAttack = self.bb.Get<float>("nextAttackTime", 0f);
-                if (Time.time >= nextAttack)
+                if (Time.time >= self.bb.Get<float>("nextAttack", 0f))
                 {
-                    self.bb.Set("nextAttackTime", Time.time + self.attackCooldown);
-                    var playerHP = self.player.GetComponent<Health>();
-                    playerHP?.TakeDamage(self.attackDamage);
-                    Debug.Log($"[Enemy] Attack! {self.attackDamage} damage");
+                    self.bb.Set("nextAttack", Time.time + self.attackCooldown);
+                    var hp = self.player.GetComponent<Health>();
+                    if (hp != null && hp.IsAlive)
+                    {
+                        hp.TakeDamage(self.attackDamage);
+                        AudioManager.Instance?.PlayHit();
+                    }
                 }
                 return State = NodeState.Running;
             }
         }
 
-        /// <summary>パトロールポイント間を巡回する。未設定の場合は Idle。</summary>
         class Patrol : BTNode
         {
             readonly EnemyBT self;
             bool initialized;
-
             public Patrol(EnemyBT e) { self = e; }
 
             public override NodeState Evaluate()
             {
                 if (!self.agent.enabled) return State = NodeState.Running;
 
-                // パトロールポイントなし → Idle
                 if (self.patrolPoints == null || self.patrolPoints.Length == 0)
                 {
                     self.agent.isStopped = true;
                     return State = NodeState.Running;
                 }
 
-                // 初期化: 最初のポイントへ出発
                 if (!initialized)
                 {
-                    int idx = self.bb.Get("patrolIndex", 0);
-                    self.agent.SetDestination(self.patrolPoints[idx].position);
+                    self.agent.SetDestination(self.patrolPoints[0].position);
                     self.agent.isStopped = false;
                     initialized = true;
                 }
 
-                // 到着チェック
-                if (!self.agent.pathPending && self.agent.hasPath
-                    && self.agent.remainingDistance < 0.5f)
+                if (!self.agent.pathPending && self.agent.hasPath && self.agent.remainingDistance < 0.5f)
                 {
                     float waitUntil = self.bb.Get<float>("patrolWaitUntil", 0f);
-
                     if (waitUntil == 0f)
                     {
-                        // 待機開始
                         self.agent.isStopped = true;
                         self.bb.Set("patrolWaitUntil", Time.time + self.patrolWaitTime);
                     }
                     else if (Time.time >= waitUntil)
                     {
-                        // 次のポイントへ
                         int idx = (self.bb.Get("patrolIndex", 0) + 1) % self.patrolPoints.Length;
                         self.bb.Set("patrolIndex", idx);
                         self.bb.Set("patrolWaitUntil", 0f);
@@ -213,7 +204,6 @@ namespace ActionGame
                         self.agent.isStopped = false;
                     }
                 }
-
                 return State = NodeState.Running;
             }
         }

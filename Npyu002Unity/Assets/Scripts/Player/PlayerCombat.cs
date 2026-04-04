@@ -1,26 +1,25 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace ActionGame
 {
     /// <summary>
-    /// Player の近接攻撃。左クリックで攻撃。
-    /// OverlapSphere で範囲内の Health を持つ他オブジェクトをヒット判定。
+    /// Player の近接攻撃。
+    /// InputHandler.AttackPressed で発動し、AudioManager で SE を再生する。
     /// </summary>
     public class PlayerCombat : MonoBehaviour
     {
         [Header("Attack")]
-        [SerializeField] float attackDamage = 30f;
-        [SerializeField] float attackRange = 2f;
-        [SerializeField] float attackOffset = 1f;
+        [SerializeField] float attackDamage  = 30f;
+        [SerializeField] float attackRange   = 2f;
+        [SerializeField] float attackOffset  = 1f;
         [SerializeField] float attackCooldown = 0.6f;
 
         float nextAttackTime;
 
         void Update()
         {
-            if (Mouse.current == null) return;
-            if (Mouse.current.leftButton.wasPressedThisFrame)
+            if (InputHandler.Instance == null) return;
+            if (InputHandler.Instance.AttackPressed)
                 TryAttack();
         }
 
@@ -29,26 +28,27 @@ namespace ActionGame
             if (Time.time < nextAttackTime) return;
             nextAttackTime = Time.time + attackCooldown;
 
+            // SE
+            AudioManager.Instance?.PlayAttack();
+
             var center = transform.position + transform.forward * attackOffset;
-            var hits = Physics.OverlapSphere(center, attackRange);
+            var hits   = Physics.OverlapSphere(center, attackRange);
 
             int hitCount = 0;
             foreach (var hit in hits)
             {
-                // 自分自身・自分の子はスキップ
                 if (hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
 
                 var hp = hit.GetComponentInParent<Health>();
                 if (hp != null && hp.IsAlive && hp.gameObject != gameObject)
                 {
                     hp.TakeDamage(attackDamage);
-                    Debug.Log($"[Player] Hit {hit.name} for {attackDamage} damage");
+                    AudioManager.Instance?.PlayHit();
                     hitCount++;
                 }
             }
 
-            if (hitCount == 0)
-                Debug.Log("[Player] Attack missed");
+            Debug.Log(hitCount > 0 ? $"[Player] Hit {hitCount} target(s)" : "[Player] Miss");
         }
 
         void OnDrawGizmosSelected()

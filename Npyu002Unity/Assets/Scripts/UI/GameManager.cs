@@ -5,7 +5,7 @@ namespace ActionGame
 {
     /// <summary>
     /// ゲームの勝敗状態を管理するシングルトン。
-    /// Inspector で playerHealth, enemyHealth, gameOverUI, winUI をアサイン。
+    /// Inspector で playerHealth, enemyHealth をアサイン。
     /// </summary>
     public class GameManager : MonoBehaviour
     {
@@ -15,10 +15,6 @@ namespace ActionGame
         [SerializeField] Health playerHealth;
         [SerializeField] Health enemyHealth;
 
-        [Header("UI Panels")]
-        [SerializeField] GameObject gameOverUI;
-        [SerializeField] GameObject winUI;
-
         void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -27,28 +23,33 @@ namespace ActionGame
 
         void Start()
         {
-            if (gameOverUI) gameOverUI.SetActive(false);
-            if (winUI)      winUI.SetActive(false);
+            if (playerHealth != null)
+            {
+                playerHealth.OnDeath += OnPlayerDeath;
+                GameUI.Instance?.SetupPlayerHP(playerHealth);
+            }
 
-            if (playerHealth) playerHealth.OnDeath += OnPlayerDeath;
-            if (enemyHealth)  enemyHealth.OnDeath  += OnEnemyDeath;
+            if (enemyHealth != null)
+            {
+                enemyHealth.OnDeath += OnEnemyDeath;
+                GameUI.Instance?.SetupEnemyHP(enemyHealth);
+            }
         }
 
         void OnPlayerDeath()
         {
             Debug.Log("[Game] Game Over");
-            if (gameOverUI) gameOverUI.SetActive(true);
+            GameUI.Instance?.ShowGameOver();
             Time.timeScale = 0f;
         }
 
         void OnEnemyDeath()
         {
             Debug.Log("[Game] You Win!");
-            if (winUI) winUI.SetActive(true);
+            GameUI.Instance?.ShowWin();
             Time.timeScale = 0f;
         }
 
-        /// <summary>UI ボタン等から呼ぶリトライ処理</summary>
         public void Restart()
         {
             Time.timeScale = 1f;
