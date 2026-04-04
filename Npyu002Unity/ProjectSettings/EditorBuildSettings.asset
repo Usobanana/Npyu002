@@ -11,5 +11,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/CubeDemo.unity
     guid: 41fd9838e23d7964db82666087475917
+  - enabled: 1
+    path: Assets/Scenes/ActionGame.unity
+    guid: e40d32f4b788c1e4284ecceb8596a471
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
