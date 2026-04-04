@@ -16,6 +16,8 @@ namespace ActionGame
 
         float nextAttackTime;
 
+        public event System.Action OnAttack;
+
         void Update()
         {
             if (InputHandler.Instance == null) return;
@@ -30,6 +32,7 @@ namespace ActionGame
 
             // SE
             AudioManager.Instance?.PlayAttack();
+            OnAttack?.Invoke();
 
             var center = transform.position + transform.forward * attackOffset;
             var hits   = Physics.OverlapSphere(center, attackRange);

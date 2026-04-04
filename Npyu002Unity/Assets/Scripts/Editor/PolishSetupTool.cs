@@ -3,10 +3,6 @@ using UnityEditor;
 
 namespace ActionGame.Editor
 {
-    /// <summary>
-    /// パーティクルエフェクト Prefab 生成 + HP バー改善を一括実行。
-    /// Tools/ActionGame/Setup Polish Effects から実行。
-    /// </summary>
     public static class PolishSetupTool
     {
         [MenuItem("Tools/ActionGame/Setup Polish Effects")]
@@ -14,10 +10,17 @@ namespace ActionGame.Editor
         {
             if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
+            if (!AssetDatabase.IsValidFolder("Assets/Materials"))
+                AssetDatabase.CreateFolder("Assets", "Materials");
 
-            var hitPrefab         = CreateHitEffect("HitEffect",         new Color(1f, 0.6f, 0.1f), 0.3f, 20);
-            var enemyDeathPrefab  = CreateHitEffect("EnemyDeathEffect",  new Color(1f, 0.2f, 0.1f), 0.6f, 40);
-            var playerDeathPrefab = CreateHitEffect("PlayerDeathEffect", new Color(0.3f, 0.6f, 1f), 0.6f, 40);
+            // パーティクル用マテリアルを作成
+            var matHit         = CreateParticleMaterial("Mat_HitEffect",         new Color(1f, 0.6f, 0.1f));
+            var matEnemyDeath  = CreateParticleMaterial("Mat_EnemyDeathEffect",  new Color(1f, 0.2f, 0.1f));
+            var matPlayerDeath = CreateParticleMaterial("Mat_PlayerDeathEffect", new Color(0.3f, 0.6f, 1f));
+
+            var hitPrefab         = CreateHitEffect("HitEffect",         new Color(1f, 0.6f, 0.1f), 0.3f, 20, matHit);
+            var enemyDeathPrefab  = CreateHitEffect("EnemyDeathEffect",  new Color(1f, 0.2f, 0.1f), 0.6f, 40, matEnemyDeath);
+            var playerDeathPrefab = CreateHitEffect("PlayerDeathEffect", new Color(0.3f, 0.6f, 1f), 0.6f, 40, matPlayerDeath);
 
             // EffectManager に Prefab を設定
             var gm = GameObject.Find("GameManagers");
@@ -35,36 +38,70 @@ namespace ActionGame.Editor
                 }
             }
 
-            // HP バー: PlayerHPBar を左上に大きく、EnemyHPBar を右上に配置
+            // HP バー改善
             ImproveHPBar("Canvas/HUD/PlayerHPBar",
                 new Vector2(0, 1), new Vector2(0, 1), new Vector2(160, -25), new Vector2(300, 28),
                 new Color(0.15f, 0.85f, 0.25f));
-
             ImproveHPBar("Canvas/HUD/EnemyHPBar",
                 new Vector2(1, 1), new Vector2(1, 1), new Vector2(-160, -25), new Vector2(300, 28),
                 new Color(0.9f, 0.2f, 0.15f));
-
-            // HP バーにラベルテキスト追加
-            AddHPLabel("Canvas/HUD/PlayerHPBar", "HP", true);
+            AddHPLabel("Canvas/HUD/PlayerHPBar", "HP",    true);
             AddHPLabel("Canvas/HUD/EnemyHPBar",  "ENEMY", false);
 
             AssetDatabase.SaveAssets();
-            Debug.Log("[PolishSetupTool] Effects and HP bars setup complete.");
+            Debug.Log("[PolishSetupTool] Done.");
+        }
+
+        // ---- マテリアル生成 ----
+
+        static Material CreateParticleMaterial(string name, Color color)
+        {
+            string path = $"Assets/Materials/{name}.mat";
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null)
+            {
+                existing.color = color;
+                EditorUtility.SetDirty(existing);
+                return existing;
+            }
+
+            // Particles/Standard Unlit シェーダーを使用
+            var shader = Shader.Find("Particles/Standard Unlit");
+            if (shader == null) shader = Shader.Find("Legacy Shaders/Particles/Additive");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+
+            var mat = new Material(shader);
+            mat.name  = name;
+            mat.color = color;
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
         }
 
         // ---- パーティクル Prefab 生成 ----
 
-        static GameObject CreateHitEffect(string name, Color color, float duration, int count)
+        static GameObject CreateHitEffect(string name, Color color, float duration, int count, Material mat)
         {
             string path = $"Assets/Prefabs/{name}.prefab";
+
+            // 既存 Prefab を上書き更新
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                // マテリアルだけ更新
+                var ps = existing.GetComponentInChildren<ParticleSystemRenderer>();
+                if (ps != null && mat != null)
+                {
+                    ps.material = mat;
+                    EditorUtility.SetDirty(existing);
+                }
+                return existing;
+            }
 
             var go = new GameObject(name);
-            var ps = go.AddComponent<ParticleSystem>();
+            var psComp = go.AddComponent<ParticleSystem>();
             go.AddComponent<ActionGame.HitEffect>();
 
-            var main = ps.main;
+            var main = psComp.main;
             main.duration        = duration;
             main.loop            = false;
             main.startLifetime   = duration * 1.2f;
@@ -74,16 +111,17 @@ namespace ActionGame.Editor
             main.gravityModifier = 0.3f;
             main.maxParticles    = count * 2;
 
-            var emission = ps.emission;
+            var emission = psComp.emission;
             emission.rateOverTime = 0;
             emission.SetBursts(new[] { new ParticleSystem.Burst(0f, count) });
 
-            var shape = ps.shape;
+            var shape = psComp.shape;
             shape.shapeType = ParticleSystemShapeType.Sphere;
             shape.radius    = 0.2f;
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            if (mat != null) renderer.material = mat;
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
@@ -97,43 +135,31 @@ namespace ActionGame.Editor
         {
             var go = GameObject.Find(path);
             if (go == null) return;
-
             var rt = go.GetComponent<RectTransform>();
             if (rt != null)
             {
                 rt.anchorMin = anchorMin; rt.anchorMax = anchorMax;
                 rt.anchoredPosition = pos; rt.sizeDelta = size;
             }
-
-            // Fill の色を更新
-            var fill = go.transform.Find("Fill Area/Fill");
+            var fill = go.transform.Find("Fill Area/Fill") ?? go.transform.Find("Fill");
             if (fill != null)
             {
                 var img = fill.GetComponent<UnityEngine.UI.Image>();
                 if (img != null) img.color = fillColor;
             }
-            // 旧構造 ("Fill") にも対応
-            var fillOld = go.transform.Find("Fill");
-            if (fillOld != null)
-            {
-                var img = fillOld.GetComponent<UnityEngine.UI.Image>();
-                if (img != null) img.color = fillColor;
-            }
-
             EditorUtility.SetDirty(go);
         }
 
         static void AddHPLabel(string barPath, string labelText, bool leftAlign)
         {
             var barGO = GameObject.Find(barPath);
-            if (barGO == null) return;
-            if (barGO.transform.Find("Label") != null) return; // 既にある
+            if (barGO == null || barGO.transform.Find("Label") != null) return;
 
             var label = new GameObject("Label");
             label.transform.SetParent(barGO.transform, false);
             var rt = label.AddComponent<RectTransform>();
             rt.anchorMin = new Vector2(leftAlign ? 0f : 1f, 0.5f);
-            rt.anchorMax = new Vector2(leftAlign ? 0f : 1f, 0.5f);
+            rt.anchorMax = rt.anchorMin;
             rt.anchoredPosition = new Vector2(leftAlign ? -45f : 45f, 0f);
             rt.sizeDelta = new Vector2(90f, 28f);
 
@@ -143,7 +169,6 @@ namespace ActionGame.Editor
             text.color     = Color.white;
             text.alignment = leftAlign ? TextAnchor.MiddleRight : TextAnchor.MiddleLeft;
             text.font      = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
             EditorUtility.SetDirty(barGO);
         }
     }

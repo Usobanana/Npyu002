@@ -44,15 +44,15 @@ namespace ActionGame
             agent  = GetComponent<NavMeshAgent>();
             health = GetComponent<Health>();
 
-            // PatrolPoints が未設定の場合はタグで自動検索
-            if (patrolPoints == null || patrolPoints.Length == 0)
+            // Prefab 由来の missing 参照を除去してからタグで補完
+            patrolPoints = System.Array.FindAll(
+                patrolPoints ?? new Transform[0],
+                p => p != null && p.gameObject != null);
+
+            if (patrolPoints.Length == 0)
             {
                 var pts = GameObject.FindGameObjectsWithTag("PatrolPoint");
-                if (pts.Length > 0)
-                {
-                    patrolPoints = new Transform[pts.Length];
-                    for (int i = 0; i < pts.Length; i++) patrolPoints[i] = pts[i].transform;
-                }
+                patrolPoints = System.Array.ConvertAll(pts, g => g.transform);
             }
 
             var playerGO = GameObject.FindGameObjectWithTag("Player");
@@ -159,6 +159,7 @@ namespace ActionGame
                     {
                         hp.TakeDamage(self.attackDamage);
                         AudioManager.Instance?.PlayHit();
+                        EffectManager.Instance?.SpawnHit(self.player.position);
                     }
                 }
                 return State = NodeState.Running;
