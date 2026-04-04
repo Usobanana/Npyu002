@@ -3977,11 +3977,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AudioManager
   bgmSource: {fileID: 0}
   seSource: {fileID: 0}
-  bgmClip: {fileID: 0}
-  attackClip: {fileID: 0}
-  hitClip: {fileID: 0}
-  enemyDeathClip: {fileID: 0}
-  playerDeathClip: {fileID: 0}
+  bgmClip: {fileID: 8300000, guid: 48b3fec242a93c241bc6f802e1d01e6e, type: 3}
+  attackClip: {fileID: 8300000, guid: 3fddc11f2eec70c4399d956664cf3570, type: 3}
+  hitClip: {fileID: 8300000, guid: b07070c82f7bf6b43a6bcf3facb79634, type: 3}
+  enemyDeathClip: {fileID: 8300000, guid: 7d1b94aa4119d76418715cae742f4e05, type: 3}
+  playerDeathClip: {fileID: 8300000, guid: a7c951903b4bb80438c84a95133a2a37, type: 3}
   bgmVolume: 0.5
   seVolume: 1
 --- !u!4 &1742039595

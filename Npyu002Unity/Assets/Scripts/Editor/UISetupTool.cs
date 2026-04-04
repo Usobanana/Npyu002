@@ -340,5 +340,72 @@ namespace ActionGame.Editor
             EditorUtility.SetDirty(gameMgrs);
             Debug.Log("[UISetupTool] GameManager references wired.");
         }
+
+        // ---- Main Menu UI ----
+
+        [MenuItem("Tools/ActionGame/Setup Main Menu UI")]
+        public static void SetupMainMenuUI()
+        {
+            // EventSystem
+            if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                var es = new GameObject("EventSystem");
+                es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                var t = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                if (t != null) es.AddComponent(t);
+                Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
+            }
+
+            // Canvas
+            var canvasGO = new GameObject("Canvas");
+            var canvas = canvasGO.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasGO.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            canvasGO.AddComponent<GraphicRaycaster>();
+            Undo.RegisterCreatedObjectUndo(canvasGO, "Create Canvas");
+
+            // Background panel
+            var bg = CreatePanel(canvasGO, "Background", Vector2.zero, new Vector2(1920, 1080));
+            bg.GetComponent<Image>().color = new Color(0.05f, 0.05f, 0.15f, 1f);
+
+            // Title
+            var title = CreateText(bg, "Title", "ACTION GAME", 96);
+            SetAnchors(title, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 180), new Vector2(800, 120));
+
+            // Subtitle
+            var sub = CreateText(bg, "Subtitle", "Press START to Play", 36);
+            SetAnchors(sub, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 80), new Vector2(600, 50));
+            sub.GetComponent<Text>().color = new Color(0.8f, 0.8f, 0.8f, 1f);
+
+            // Start button
+            var startBtn = CreateButton(bg, "StartButton", "START", new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(280, 70));
+
+            // Quit button
+            var quitBtn = CreateButton(bg, "QuitButton", "QUIT", new Vector2(0.5f, 0.5f), new Vector2(0, -110), new Vector2(280, 70));
+            quitBtn.GetComponent<Image>().color = new Color(0.4f, 0.15f, 0.15f, 0.9f);
+
+            // Best score display
+            var best = CreateText(bg, "BestScore", "BEST: 0", 28);
+            SetAnchors(best, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(400, 40));
+            int hi = UnityEngine.PlayerPrefs.GetInt("HighScore", 0);
+            best.GetComponent<Text>().text = $"BEST: {hi:D6}";
+
+            // MainMenuUI component (wires button callbacks at runtime)
+            var menuGO = new GameObject("MainMenuUI");
+            Undo.RegisterCreatedObjectUndo(menuGO, "Create MainMenuUI");
+            var menuUI = menuGO.AddComponent<ActionGame.MainMenuUI>();
+
+            // Wire buttons at runtime via code (same pattern as GameUI)
+            var soStart = new SerializedObject(startBtn.GetComponent<Button>());
+            var soQuit  = new SerializedObject(quitBtn.GetComponent<Button>());
+            soStart.ApplyModifiedProperties();
+            soQuit.ApplyModifiedProperties();
+
+            EditorUtility.SetDirty(canvasGO);
+            EditorUtility.SetDirty(menuGO);
+            Debug.Log("[UISetupTool] Main Menu UI created. Add onClick listeners at runtime via MainMenuUI.Start().");
+        }
     }
 }
