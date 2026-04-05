@@ -41,6 +41,9 @@ namespace ActionGame
 
         void Start()
         {
+            // Inspector 未接続の場合は名前で自動検索（Canvas の子から探す）
+            AutoFindPanels();
+
             HideAll();
 
             if (mobileControls != null)
@@ -185,6 +188,24 @@ namespace ActionGame
         {
             if (InputHandler.Instance != null && InputHandler.Instance.PausePressed)
                 TogglePause();
+        }
+
+        void AutoFindPanels()
+        {
+            // Canvas の子を再帰的に検索して未接続フィールドを補完
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null) return;
+
+            if (pausePanel    == null) pausePanel    = FindInCanvas(canvas, "PausePanel");
+            if (gameOverPanel == null) gameOverPanel = FindInCanvas(canvas, "GameOverPanel");
+            if (winPanel      == null) winPanel      = FindInCanvas(canvas, "WinPanel");
+        }
+
+        static GameObject FindInCanvas(Canvas canvas, string name)
+        {
+            var t = canvas.transform.Find(name);
+            return t != null ? t.gameObject : null;
         }
 
         void HideAll()
