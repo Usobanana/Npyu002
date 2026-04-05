@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using AnimatorClip = UnityEngine.AnimationClip;
 
 namespace ActionGame.Editor
@@ -460,6 +462,142 @@ namespace ActionGame.Editor
 
             UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
             Debug.Log("[SwordCharacterSetupTool] DebugOverlayUI をシーンに追加しました。F1 キーで表示切り替え。Ctrl+S で保存。");
+        }
+
+        // ── 8. Game UI パネル（Pause / GameOver / Win）をシーンに追加 ──────
+        [MenuItem("Tools/ActionGame/Add Game UI Panels to Scene")]
+        public static void PatchGameUIPanels()
+        {
+            var canvas = GameObject.Find("Canvas");
+            if (canvas == null)
+            {
+                Debug.LogError("[SwordCharacterSetupTool] Canvas が見つかりません。");
+                return;
+            }
+
+            // GameUI コンポーネントを Canvas に追加
+            var gameUI = canvas.GetComponent<GameUI>() ?? canvas.AddComponent<GameUI>();
+            var guiSO  = new SerializedObject(gameUI);
+            guiSO.Update();
+
+            // 各パネルを作成
+            var pausePanel    = CreateOverlayPanel(canvas, "PausePanel",    "PAUSE",     new Color(0f,0f,0f,0.75f));
+            var gameOverPanel = CreateOverlayPanel(canvas, "GameOverPanel", "GAME OVER", new Color(0f,0f,0f,0.82f));
+            var winPanel      = CreateOverlayPanel(canvas, "WinPanel",      "YOU WIN!",  new Color(0f,0.05f,0f,0.82f));
+
+            // Pause: Resume / Menu / Quit
+            CreatePanelButton(pausePanel, "ResumeButton", "RESUME",   0f);
+            CreatePanelButton(pausePanel, "MenuButton",   "MENU",    60f);
+            CreatePanelButton(pausePanel, "QuitButton",   "QUIT",   120f);
+
+            // GameOver: Retry / Menu / Quit
+            CreatePanelButton(gameOverPanel, "RetryButton", "RETRY",  0f);
+            CreatePanelButton(gameOverPanel, "MenuButton",  "MENU",  60f);
+            CreatePanelButton(gameOverPanel, "QuitButton",  "QUIT", 120f);
+
+            // Win: Retry / Menu / Quit
+            CreatePanelButton(winPanel, "RetryButton", "RETRY",  0f);
+            CreatePanelButton(winPanel, "MenuButton",  "MENU",  60f);
+            CreatePanelButton(winPanel, "QuitButton",  "QUIT", 120f);
+
+            // GameUI のフィールドに Panel を接続
+            SetSORef(guiSO, "pausePanel",    pausePanel);
+            SetSORef(guiSO, "gameOverPanel", gameOverPanel);
+            SetSORef(guiSO, "winPanel",      winPanel);
+            guiSO.ApplyModifiedProperties();
+
+            // パネルは非表示で開始
+            pausePanel.SetActive(false);
+            gameOverPanel.SetActive(false);
+            winPanel.SetActive(false);
+
+            // GameManager が無ければ追加
+            if (Object.FindFirstObjectByType<GameManager>() == null)
+            {
+                var gm = new GameObject("GameManager");
+                gm.AddComponent<GameManager>();
+                Debug.Log("[SwordCharacterSetupTool] GameManager を追加しました。");
+            }
+
+            EditorSceneManager.MarkAllScenesDirty();
+            Debug.Log("[SwordCharacterSetupTool] Pause / GameOver / Win パネルを追加しました。Ctrl+S で保存してください。");
+        }
+
+        // パネル共通: フルスクリーン半透明背景 + タイトルテキスト
+        static GameObject CreateOverlayPanel(GameObject canvas, string goName, string title, Color bgColor)
+        {
+            var existing = canvas.transform.Find(goName);
+            if (existing != null) return existing.gameObject;
+
+            var panel = new GameObject(goName);
+            panel.transform.SetParent(canvas.transform, false);
+
+            var img   = panel.AddComponent<Image>();
+            img.color = bgColor;
+            var rect  = panel.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            // タイトルテキスト
+            var titleGO   = new GameObject("Title");
+            titleGO.transform.SetParent(panel.transform, false);
+            var text      = titleGO.AddComponent<Text>();
+            text.text      = title;
+            text.fontSize  = 52;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color     = Color.white;
+            text.font      = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var tr         = titleGO.GetComponent<RectTransform>();
+            tr.anchorMin        = new Vector2(0.5f, 0.5f);
+            tr.anchorMax        = new Vector2(0.5f, 0.5f);
+            tr.sizeDelta        = new Vector2(500f, 80f);
+            tr.anchoredPosition = new Vector2(0f, 100f);
+
+            return panel;
+        }
+
+        // ボタン1個: 中央 yOffset 分だけ下にずらして配置
+        static void CreatePanelButton(GameObject panel, string btnName, string label, float yOffset)
+        {
+            if (panel.transform.Find(btnName) != null) return;
+
+            var btnGO = new GameObject(btnName);
+            btnGO.transform.SetParent(panel.transform, false);
+
+            var img   = btnGO.AddComponent<Image>();
+            img.color = new Color(0.15f, 0.15f, 0.15f, 0.95f);
+            btnGO.AddComponent<Button>();
+
+            var rect = btnGO.GetComponent<RectTransform>();
+            rect.anchorMin        = new Vector2(0.5f, 0.5f);
+            rect.anchorMax        = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta        = new Vector2(220f, 50f);
+            rect.anchoredPosition = new Vector2(0f, -10f - yOffset);
+
+            // ラベル
+            var labelGO   = new GameObject("Text");
+            labelGO.transform.SetParent(btnGO.transform, false);
+            var text       = labelGO.AddComponent<Text>();
+            text.text      = label;
+            text.fontSize  = 24;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color     = Color.white;
+            text.font      = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var lr         = labelGO.GetComponent<RectTransform>();
+            lr.anchorMin = Vector2.zero;
+            lr.anchorMax = Vector2.one;
+            lr.offsetMin = Vector2.zero;
+            lr.offsetMax = Vector2.zero;
+        }
+
+        static void SetSORef(SerializedObject so, string propName, GameObject value)
+        {
+            var p = so.FindProperty(propName);
+            if (p != null) p.objectReferenceValue = value;
         }
 
         // ── ヘルパー ────────────────────────────────────────────────────
