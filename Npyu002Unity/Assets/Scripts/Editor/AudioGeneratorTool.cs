@@ -131,22 +131,93 @@ namespace ActionGame.Editor
             File.WriteAllBytes(path, bytes);
         }
 
+        // ── 実音源ワイヤリング ────────────────────────────────────
+
+        [MenuItem("Tools/ActionGame/Wire Real Audio Clips")]
+        public static void WireRealAudioClips()
+        {
+            var amGO = GameObject.Find("AudioManager");
+            if (amGO == null) { Debug.LogError("[AudioGenerator] AudioManager GO not found."); return; }
+            var am = amGO.GetComponent<ActionGame.AudioManager>();
+            if (am == null) return;
+
+            var so = new SerializedObject(am);
+
+            // BGM（BGM_Battle_1, BGM_Battle_2 → bgmClips 配列）
+            SetClipArray(so, "bgmClips", new[] {
+                LoadAny("BGM_Battle_1", "mp3"),
+                LoadAny("BGM_Battle_2", "mp3"),
+                LoadAny("BGM_Battle",   "wav"),   // フォールバック
+            });
+
+            // スイング SE（SwingSword/ の全クリップ → attackClips 配列）
+            SetClipArray(so, "attackClips", LoadFolder("Assets/Audio/SwingSword"));
+
+            // ヒット SE（Slash/ → hitClips 配列）
+            SetClipArray(so, "hitClips", LoadFolder("Assets/Audio/Slash"));
+
+            // その他 SE
+            SetSingleClip(so, "enemyDeathClip", LoadAny("SE_EnemyDeath", "wav"));
+            SetSingleClip(so, "playerDeathClip", LoadAny("SE_PlayerDeath", "wav"));
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(amGO);
+
+            UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+            Debug.Log("[AudioGenerator] Real audio clips wired to AudioManager.");
+        }
+
         static void WireAudioManager()
         {
+            // プロシージャル音源（フォールバック）
             var amGO = GameObject.Find("AudioManager");
             if (amGO == null) { Debug.LogWarning("[AudioGenerator] AudioManager GO not found."); return; }
             var am = amGO.GetComponent<ActionGame.AudioManager>();
             if (am == null) return;
 
             var so = new SerializedObject(am);
-            so.FindProperty("bgmClip").objectReferenceValue         = Load("BGM_Battle");
-            so.FindProperty("attackClip").objectReferenceValue      = Load("SE_Attack");
-            so.FindProperty("hitClip").objectReferenceValue         = Load("SE_Hit");
-            so.FindProperty("enemyDeathClip").objectReferenceValue  = Load("SE_EnemyDeath");
-            so.FindProperty("playerDeathClip").objectReferenceValue = Load("SE_PlayerDeath");
+            SetClipArray(so, "bgmClips",    new[] { Load("BGM_Battle") });
+            SetClipArray(so, "attackClips", new[] { Load("SE_Attack")  });
+            SetClipArray(so, "hitClips",    new[] { Load("SE_Hit")     });
+            SetSingleClip(so, "enemyDeathClip",  Load("SE_EnemyDeath"));
+            SetSingleClip(so, "playerDeathClip", Load("SE_PlayerDeath"));
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(amGO);
         }
+
+        // ── ヘルパー ─────────────────────────────────────────────
+
+        static void SetClipArray(SerializedObject so, string prop, AudioClip[] clips)
+        {
+            var p = so.FindProperty(prop);
+            if (p == null) return;
+            var valid = System.Array.FindAll(clips, c => c != null);
+            p.arraySize = valid.Length;
+            for (int i = 0; i < valid.Length; i++)
+                p.GetArrayElementAtIndex(i).objectReferenceValue = valid[i];
+        }
+
+        static void SetSingleClip(SerializedObject so, string prop, AudioClip clip)
+        {
+            var p = so.FindProperty(prop);
+            if (p != null && clip != null) p.objectReferenceValue = clip;
+        }
+
+        static AudioClip[] LoadFolder(string folderPath)
+        {
+            var guids  = AssetDatabase.FindAssets("t:AudioClip", new[] { folderPath });
+            var result = new System.Collections.Generic.List<AudioClip>();
+            foreach (var g in guids)
+            {
+                var c = AssetDatabase.LoadAssetAtPath<AudioClip>(AssetDatabase.GUIDToAssetPath(g));
+                if (c != null) result.Add(c);
+            }
+            result.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
+            return result.ToArray();
+        }
+
+        static AudioClip LoadAny(string name, string ext) =>
+            AssetDatabase.LoadAssetAtPath<AudioClip>($"{OutputDir}/{name}.{ext}");
 
         static AudioClip Load(string name) =>
             AssetDatabase.LoadAssetAtPath<AudioClip>($"{OutputDir}/{name}.wav");

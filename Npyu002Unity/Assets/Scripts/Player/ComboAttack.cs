@@ -115,7 +115,7 @@ namespace ActionGame
             isLightAttacking = true;
             lightBuffered    = false;
 
-            AudioManager.Instance?.PlayAttack();
+            // スイング SE は AttackSoundBehaviour (StateMachineBehaviour) で制御
             TriggerAnim(lightSteps[step - 1].trigger);
             OnComboStep?.Invoke(step);
 
@@ -157,7 +157,7 @@ namespace ActionGame
             isStrongAttacking = true;
             strongBuffered    = false;
 
-            AudioManager.Instance?.PlayAttack();
+            // スイング SE は AttackSoundBehaviour (StateMachineBehaviour) で制御
             TriggerAnim(strongSteps[step - 1].trigger);
             OnComboStep?.Invoke(step + 10); // 10オフセットでライトと区別
 
@@ -190,7 +190,7 @@ namespace ActionGame
             if (specialCooldownTimer > 0f) return;
             specialCooldownTimer = specialCooldown;
 
-            AudioManager.Instance?.PlayAttack();
+            // スイング SE は AttackSoundBehaviour (StateMachineBehaviour) で制御
             TriggerAnim(waveAttackTrigger);
 
             StartCoroutine(ApplyWaveDamage());
@@ -285,6 +285,16 @@ namespace ActionGame
         bool   gizmoIsWave     = false;
         bool   gizmoDidHit     = false;
         const float GizmoDuration = 0.25f; // 表示時間（秒）
+
+        /// <summary>AttackEventBehaviour（StateMachineBehaviour）から外部呼び出し用</summary>
+        public void ShowHitGizmoExternal(Vector3 center, float range, bool didHit)
+        {
+            gizmoTimer  = GizmoDuration;
+            gizmoRange  = range;
+            gizmoOffset = Vector3.Distance(transform.position, center); // 近似
+            gizmoIsWave = false;
+            gizmoDidHit = didHit;
+        }
 
         /// <summary>判定が出た瞬間に Gizmo タイマーをセット（ApplyDamage / ApplyWaveDamage から呼ぶ）</summary>
         void ShowHitGizmo(float range, float offset, bool isWave, bool didHit)
