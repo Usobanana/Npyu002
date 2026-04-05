@@ -1,5 +1,71 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8811058909711748282
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.05
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
+--- !u!114 &-8588326551625431241
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.25
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1101 &-7542922489494211892
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -25,6 +91,39 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!114 &-7500220519705463150
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.25
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1102 &-7343665931942963291
 AnimatorState:
   serializedVersion: 6
@@ -37,7 +136,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -825012652193281411}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: -8811058909711748282}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -52,6 +152,39 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!114 &-7330374728072271105
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.05
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1102 &-6558702338490955477
 AnimatorState:
   serializedVersion: 6
@@ -64,7 +197,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 4635545063387620139}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: -7500220519705463150}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -180,6 +314,39 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!114 &-3341526110958050038
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.25
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1102 &-3079941313309268145
 AnimatorState:
   serializedVersion: 6
@@ -192,7 +359,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 2816321453756188440}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: 3022278958519423812}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -271,7 +439,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 7013308721558368286}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: -3341526110958050038}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -567,7 +736,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 455000967052156854}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: 8216058444831022457}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -656,6 +826,39 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!114 &2126455464188754086
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 4
+  time0: 0.01
+  time1: 0.05
+  time2: 0.1
+  time3: 0.15
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1101 &2381078981598089369
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -693,7 +896,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 5465727766451920098}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: 8922707430197145062}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -755,6 +959,39 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!114 &3022278958519423812
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.25
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1107 &3981450931146965736
 AnimatorStateMachine:
   serializedVersion: 7
@@ -778,13 +1015,13 @@ AnimatorStateMachine:
     m_Position: {x: 500, y: 0, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -7343665931942963291}
-    m_Position: {x: 500, y: 80, z: 0}
+    m_Position: {x: 510, y: 90, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -988429214693548030}
-    m_Position: {x: 500, y: 160, z: 0}
+    m_Position: {x: 500, y: 320, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -4696562652031812423}
-    m_Position: {x: 500, y: 240, z: 0}
+    m_Position: {x: 30, y: 220, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1925081470500709494}
     m_Position: {x: 250, y: 320, z: 0}
@@ -936,7 +1173,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 7260040304674867308}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: -8588326551625431241}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -988,7 +1226,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 7634673720324417699}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: 2126455464188754086}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -1015,7 +1254,8 @@ AnimatorState:
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 382578446619266702}
-  m_StateMachineBehaviours: []
+  m_StateMachineBehaviours:
+  - {fileID: -7330374728072271105}
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
   m_WriteDefaultValues: 1
@@ -1118,6 +1358,39 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 1
+--- !u!114 &8216058444831022457
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 1
+  time0: 0.25
+  time1: 0.6
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
 --- !u!1101 &8545918982663853345
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -1143,3 +1416,36 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!114 &8922707430197145062
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
+  hitCount: 2
+  time0: 0.05
+  time1: 0.25
+  time2: 0.75
+  time3: 0.9
+  damage0: 20
+  damage1: 20
+  damage2: 20
+  damage3: 20
+  range0: 1.5
+  range1: 1.5
+  range2: 1.5
+  range3: 1.5
+  offset0: {x: 0, y: 0.8, z: 1}
+  offset1: {x: 0, y: 0.8, z: 1}
+  offset2: {x: 0, y: 0.8, z: 1}
+  offset3: {x: 0, y: 0.8, z: 1}
+  playSound0: 1
+  playSound1: 1
+  playSound2: 1
+  playSound3: 1
