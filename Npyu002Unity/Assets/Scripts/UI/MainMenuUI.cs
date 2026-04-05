@@ -6,11 +6,13 @@ namespace ActionGame
 {
     /// <summary>
     /// メインメニューの UI 制御。
-    /// START ボタン → ActionGame シーンへ遷移。
+    /// START ボタン → SwordGame シーンへ遷移。
     /// QUIT  ボタン → アプリ終了。
     /// </summary>
     public class MainMenuUI : MonoBehaviour
     {
+        [SerializeField] string gameSceneName = "SwordGame";
+
         void Start()
         {
             Bind("Canvas/ButtonPanel/StartButton", OnStart);
@@ -27,7 +29,7 @@ namespace ActionGame
 
         public void OnStart()
         {
-            SceneManager.LoadScene("ActionGame");
+            SceneManager.LoadScene(gameSceneName);
         }
 
         public void OnQuit()

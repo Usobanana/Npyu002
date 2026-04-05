@@ -18,36 +18,38 @@ namespace ActionGame
             cc   = GetComponent<CharacterController>();
             anim = GetComponentInChildren<Animator>();
 
+            // PlayerCombat（旧システム）があれば Attack トリガーを接続
             var combat = GetComponent<PlayerCombat>();
             if (combat != null)
-                combat.OnAttack += () => anim?.SetTrigger("Attack");
+                combat.OnAttack += () =>
+                {
+                    if (anim != null && anim.runtimeAnimatorController != null)
+                        anim.SetTrigger("Attack");
+                };
 
             var health = GetComponent<Health>();
             if (health != null)
             {
                 health.OnHealthChanged += (cur, max) =>
                 {
-                    if (cur < max && cur > 0f)
-                        anim?.SetTrigger("HitReact");
+                    if (cur < max && cur > 0f && anim != null && anim.runtimeAnimatorController != null)
+                        anim.SetTrigger("HitReact");
                 };
-                health.OnDeath += () => anim?.SetBool("IsDead", true);
+                health.OnDeath += () =>
+                {
+                    if (anim != null && anim.runtimeAnimatorController != null)
+                        anim.SetBool("IsDead", true);
+                };
             }
         }
 
         void Update()
         {
-            if (anim == null) return;
+            if (anim == null || anim.runtimeAnimatorController == null) return;
 
             var vel = cc.velocity;
             vel.y = 0f;
             anim.SetFloat("Speed", vel.magnitude);
-
-            bool grounded = cc.isGrounded;
-            if (wasGrounded && !grounded)
-                anim.SetBool("IsJumping", true);
-            else if (!wasGrounded && grounded)
-                anim.SetBool("IsJumping", false);
-            wasGrounded = grounded;
         }
     }
 }

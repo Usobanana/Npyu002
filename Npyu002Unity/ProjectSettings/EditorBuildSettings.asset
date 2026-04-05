@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/MainMenu.unity
     guid: f308521dc90678d4ab21e3fd0f6960dd
   - enabled: 1
+    path: Assets/Scenes/SwordGame.unity
+    guid: 593e8b48c762b8e4e964f61bdfcb48fb
+  - enabled: 0
     path: Assets/Scenes/ActionGame.unity
     guid: e40d32f4b788c1e4284ecceb8596a471
   m_configObjects:

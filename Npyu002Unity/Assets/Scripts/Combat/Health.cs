@@ -20,11 +20,15 @@ namespace ActionGame
         /// <summary>HP が 0 になったとき</summary>
         public event Action OnDeath;
 
+        // ドッジ無敵フレーム用
+        bool isInvincible = false;
+        public void SetInvincible(bool value) => isInvincible = value;
+
         void Awake() => currentHP = maxHP;
 
         public void TakeDamage(float amount)
         {
-            if (!IsAlive) return;
+            if (!IsAlive || isInvincible) return;
             currentHP = Mathf.Max(0f, currentHP - amount);
             OnHealthChanged?.Invoke(currentHP, maxHP);
             if (currentHP <= 0f)

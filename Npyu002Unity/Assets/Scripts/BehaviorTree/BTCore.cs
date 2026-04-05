@@ -54,6 +54,29 @@ namespace ActionGame.AI
         }
     }
 
+    /// <summary>
+    /// 条件ラムダだけで作れるリーフノード。
+    /// true → Success / false → Failure
+    /// </summary>
+    public class BTCondition : BTNode
+    {
+        readonly System.Func<bool> condition;
+        public BTCondition(System.Func<bool> c) { condition = c; }
+        public override NodeState Evaluate() =>
+            State = condition() ? NodeState.Success : NodeState.Failure;
+    }
+
+    /// <summary>
+    /// アクションラムダだけで作れるリーフノード。
+    /// ラムダ内で NodeState を返す。
+    /// </summary>
+    public class BTAction : BTNode
+    {
+        readonly System.Func<NodeState> action;
+        public BTAction(System.Func<NodeState> a) { action = a; }
+        public override NodeState Evaluate() => State = action();
+    }
+
     /// <summary>BT ノード間で共有するデータストア</summary>
     public class BTBlackboard
     {

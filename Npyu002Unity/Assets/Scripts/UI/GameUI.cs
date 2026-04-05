@@ -60,10 +60,13 @@ namespace ActionGame
         void WireButtons()
         {
             BindButton(pausePanel,    "ResumeButton", Resume);
+            BindButton(pausePanel,    "MenuButton",   OnMainMenu);
             BindButton(pausePanel,    "QuitButton",   OnQuit);
             BindButton(gameOverPanel, "RetryButton",  OnRetry);
+            BindButton(gameOverPanel, "MenuButton",   OnMainMenu);
             BindButton(gameOverPanel, "QuitButton",   OnQuit);
             BindButton(winPanel,      "RetryButton",  OnRetry);
+            BindButton(winPanel,      "MenuButton",   OnMainMenu);
             BindButton(winPanel,      "QuitButton",   OnQuit);
 
             if (InputHandler.Instance != null)
@@ -158,6 +161,12 @@ namespace ActionGame
         {
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        public void OnMainMenu()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("MainMenu");
         }
 
         public void OnQuit()
