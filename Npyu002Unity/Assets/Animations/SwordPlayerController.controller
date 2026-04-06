@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
   hitCount: 1
-  time0: 0.25
+  time0: 0.15
   time1: 0.6
   time2: 0.75
   time3: 0.9
@@ -103,9 +103,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37b6c63a9f435f542b69502c6512570d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
-  hitCount: 1
-  time0: 0.25
-  time1: 0.6
+  hitCount: 2
+  time0: 0.15
+  time1: 0.3
   time2: 0.75
   time3: 0.9
   damage0: 20
@@ -327,7 +327,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
   hitCount: 1
-  time0: 0.25
+  time0: 0.15
   time1: 0.6
   time2: 0.75
   time3: 0.9
@@ -972,7 +972,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ActionGame.AttackEventBehaviour
   hitCount: 1
-  time0: 0.25
+  time0: 0.05
   time1: 0.6
   time2: 0.75
   time3: 0.9
@@ -1003,10 +1003,10 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 3995083696429345952}
-    m_Position: {x: 250, y: 0, z: 0}
+    m_Position: {x: -200, y: -300, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -2950458253972018910}
-    m_Position: {x: 250, y: 80, z: 0}
+    m_Position: {x: -200, y: -100, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 6880834175486081937}
     m_Position: {x: 500, y: -80, z: 0}
@@ -1021,7 +1021,7 @@ AnimatorStateMachine:
     m_Position: {x: 500, y: 320, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -4696562652031812423}
-    m_Position: {x: 30, y: 220, z: 0}
+    m_Position: {x: -500, y: 0, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1925081470500709494}
     m_Position: {x: 250, y: 320, z: 0}
@@ -1030,16 +1030,16 @@ AnimatorStateMachine:
     m_Position: {x: 500, y: 160, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -3079941313309268145}
-    m_Position: {x: 750, y: -160, z: 0}
+    m_Position: {x: 900, y: -300, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -6558702338490955477}
-    m_Position: {x: 750, y: -80, z: 0}
+    m_Position: {x: 900, y: -200, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -2431421833010025431}
-    m_Position: {x: 750, y: 0, z: 0}
+    m_Position: {x: 900, y: -100, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 5582606514257524281}
-    m_Position: {x: 750, y: 80, z: 0}
+    m_Position: {x: 900, y: 0, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 390327200833366635}
     m_Position: {x: 750, y: 160, z: 0}
@@ -1060,9 +1060,9 @@ AnimatorStateMachine:
   m_EntryTransitions: []
   m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
-  m_AnyStatePosition: {x: 50, y: 20, z: 0}
-  m_EntryPosition: {x: 50, y: 120, z: 0}
-  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_AnyStatePosition: {x: -200, y: 0, z: 0}
+  m_EntryPosition: {x: -460, y: -300, z: 0}
+  m_ExitPosition: {x: 1020, y: 250, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: 3995083696429345952}
 --- !u!1102 &3995083696429345952

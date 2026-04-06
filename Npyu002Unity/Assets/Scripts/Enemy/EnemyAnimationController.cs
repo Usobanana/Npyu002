@@ -5,7 +5,7 @@ namespace ActionGame
 {
     /// <summary>
     /// NavMeshAgent の速度と Health イベントを子 Animator に反映する。
-    /// EnemyBT から TriggerAttack() / TriggerHitReact() を呼ぶ。
+    /// EnemyBT から TriggerAttack() / TriggerHitReact() / TriggerDodge() を呼ぶ。
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(Health))]
@@ -37,7 +37,6 @@ namespace ActionGame
         void Update()
         {
             if (anim == null || agent == null) return;
-            // NavMeshAgent の速度を Speed パラメータに流す
             anim.SetFloat("Speed", agent.velocity.magnitude);
         }
 
@@ -53,6 +52,13 @@ namespace ActionGame
         {
             if (anim != null && anim.runtimeAnimatorController != null)
                 anim.SetTrigger("HitReact");
+        }
+
+        /// <summary>ドッジアニメーションを再生（EnemyBT から呼ぶ）</summary>
+        public void TriggerDodge()
+        {
+            if (anim != null && anim.runtimeAnimatorController != null)
+                anim.SetTrigger("Dodge");
         }
     }
 }

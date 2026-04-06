@@ -18,37 +18,33 @@ namespace ActionGame
         [System.Serializable]
         public class ComboStep
         {
-            public string trigger  = "Attack1";
-            public float  damage   = 20f;
-            public float  hitDelay = 0.25f;  // ダメージ判定までの遅延（秒）
+            public string trigger = "Attack1";
         }
 
         // ── ライトコンボ（左クリック）──────────────────────────────────
         [Header("Light Combo  ─ 左クリック")]
         [SerializeField] ComboStep[] lightSteps = new ComboStep[]
         {
-            new ComboStep { trigger = "Attack1", damage = 20f, hitDelay = 0.25f },
-            new ComboStep { trigger = "Attack2", damage = 25f, hitDelay = 0.25f },
-            new ComboStep { trigger = "Attack3", damage = 30f, hitDelay = 0.40f },
-            new ComboStep { trigger = "Attack4", damage = 45f, hitDelay = 0.40f },
+            new ComboStep { trigger = "Attack1" },
+            new ComboStep { trigger = "Attack2" },
+            new ComboStep { trigger = "Attack3" },
+            new ComboStep { trigger = "Attack4" },
         };
 
         // ── ストロングコンボ（右クリック）─────────────────────────────
         [Header("Strong Combo ─ 右クリック")]
         [SerializeField] ComboStep[] strongSteps = new ComboStep[]
         {
-            new ComboStep { trigger = "SAtk1", damage = 35f, hitDelay = 0.35f },
-            new ComboStep { trigger = "SAtk2", damage = 40f, hitDelay = 0.35f },
-            new ComboStep { trigger = "SAtk3", damage = 55f, hitDelay = 0.45f },
-            new ComboStep { trigger = "SAtk4", damage = 75f, hitDelay = 0.50f },
+            new ComboStep { trigger = "SAtk1" },
+            new ComboStep { trigger = "SAtk2" },
+            new ComboStep { trigger = "SAtk3" },
+            new ComboStep { trigger = "SAtk4" },
         };
 
         // ── ウェーブスペシャル（E キー）──────────────────────────────
         [Header("Wave Special ─ E キー")]
         [SerializeField] string waveAttackTrigger = "WaveAtk";
-        [SerializeField] float  waveDamage        = 80f;
         [SerializeField] float  waveRange         = 5f;
-        [SerializeField] float  waveHitDelay      = 0.4f;
         [SerializeField] float  specialCooldown   = 5f;
 
         // ── コンボタイミング ──────────────────────────────────────────
@@ -115,13 +111,11 @@ namespace ActionGame
             isLightAttacking = true;
             lightBuffered    = false;
 
-            // スイング SE は AttackSoundBehaviour (StateMachineBehaviour) で制御
             TriggerAnim(lightSteps[step - 1].trigger);
             OnComboStep?.Invoke(step);
 
             if (lightResetRoutine != null) StopCoroutine(lightResetRoutine);
             lightResetRoutine = StartCoroutine(LightTimer(step));
-            StartCoroutine(ApplyDamage(lightSteps[step - 1], attackRange, attackOffset));
         }
 
         IEnumerator LightTimer(int step)
@@ -157,13 +151,11 @@ namespace ActionGame
             isStrongAttacking = true;
             strongBuffered    = false;
 
-            // スイング SE は AttackSoundBehaviour (StateMachineBehaviour) で制御
             TriggerAnim(strongSteps[step - 1].trigger);
             OnComboStep?.Invoke(step + 10); // 10オフセットでライトと区別
 
             if (strongResetRoutine != null) StopCoroutine(strongResetRoutine);
             strongResetRoutine = StartCoroutine(StrongTimer(step));
-            StartCoroutine(ApplyDamage(strongSteps[step - 1], attackRange, attackOffset));
         }
 
         IEnumerator StrongTimer(int step)
@@ -190,83 +182,7 @@ namespace ActionGame
             if (specialCooldownTimer > 0f) return;
             specialCooldownTimer = specialCooldown;
 
-            // スイング SE は AttackSoundBehaviour (StateMachineBehaviour) で制御
             TriggerAnim(waveAttackTrigger);
-
-            StartCoroutine(ApplyWaveDamage());
-        }
-
-        IEnumerator ApplyWaveDamage()
-        {
-            yield return new WaitForSeconds(waveHitDelay);
-
-            var hits     = Physics.OverlapSphere(transform.position, waveRange);
-            int hitCount = 0;
-
-            foreach (var hit in hits)
-            {
-                if (hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
-                var hp = hit.GetComponentInParent<Health>();
-                if (hp != null && hp.IsAlive && hp != selfHealth)
-                {
-                    hp.TakeDamage(waveDamage);
-                    AudioManager.Instance?.PlayHit();
-                    EffectManager.Instance?.SpawnHit(hit.transform.position);
-
-                    // Wave は強めのノックバック
-                    var dir = (hit.transform.position - transform.position).normalized;
-                    hit.GetComponentInParent<KnockbackReceiver>()?.ApplyKnockback(dir, 6f);
-                    hitCount++;
-                }
-            }
-
-            ShowHitGizmo(waveRange, 0f, true, hitCount > 0);
-            // Wave は全体に強い打感
-            if (hitCount > 0)
-            {
-                HitStopManager.Instance?.Trigger(0.12f);
-                // Shake(duration, magnitude)
-                CameraShake.Instance?.Shake(0.22f, 0.35f);
-                Debug.Log($"[Wave Special] {hitCount} 体ヒット / {waveDamage} ダメージ");
-            }
-        }
-
-        // ── 通常ダメージ判定（共通）──────────────────────────────────
-
-        IEnumerator ApplyDamage(ComboStep step, float range, float offset)
-        {
-            yield return new WaitForSeconds(step.hitDelay);
-
-            var center   = transform.position + transform.forward * offset;
-            var hits     = Physics.OverlapSphere(center, range);
-            int hitCount = 0;
-
-            foreach (var hit in hits)
-            {
-                if (hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
-                var hp = hit.GetComponentInParent<Health>();
-                if (hp != null && hp.IsAlive && hp != selfHealth)
-                {
-                    hp.TakeDamage(step.damage);
-                    AudioManager.Instance?.PlayHit();
-                    EffectManager.Instance?.SpawnHit(hit.transform.position);
-
-                    // 打感（ダメージ量に応じてスケール）
-                    float power = Mathf.Clamp01(step.damage / 50f);
-                    HitStopManager.Instance?.Trigger(Mathf.Lerp(0.04f, 0.10f, power));
-                    // Shake(duration, magnitude)
-                    CameraShake.Instance?.Shake(0.12f, Mathf.Lerp(0.05f, 0.20f, power));
-                    var knockDir = (hit.transform.position - transform.position).normalized;
-                    hit.GetComponentInParent<KnockbackReceiver>()?.ApplyKnockback(
-                        knockDir, Mathf.Lerp(2f, 5f, power));
-
-                    hitCount++;
-                }
-            }
-
-            ShowHitGizmo(range, offset, false, hitCount > 0);
-            if (hitCount > 0)
-                Debug.Log($"[Combo] {step.trigger} {hitCount} 体ヒット / {step.damage} ダメージ");
         }
 
         // ── ヘルパー ──────────────────────────────────────────────────

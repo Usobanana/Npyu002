@@ -15,7 +15,8 @@ namespace ActionGame
     /// BT 共通構造:
     ///   Root Selector
     ///   ├─ [スタッガー]  被弾硬直タイマー > 0 → 停止待機
-    ///   ├─ [攻撃]       攻撃範囲内 → 向き直し → 攻撃
+    ///   ├─ [ドッジ]     プレイヤー攻撃始動を検知 → 回避
+    ///   ├─ [攻撃]       攻撃範囲内 → 向き直し → コンボ攻撃
     ///   ├─ [移動]       型ごとに異なる
     ///   └─ [待機/巡回]
     /// </summary>
@@ -34,10 +35,19 @@ namespace ActionGame
         [SerializeField] float preferredDist     = 4f;   // Cautious: 維持したい距離
 
         [Header("Combat")]
-        [SerializeField] float attackDamage      = 10f;
-        [SerializeField] float attackCooldown    = 1.5f;
-        [SerializeField] float attackHitDelay    = 0.4f;
+        [SerializeField] float attackDamage       = 10f;
+        [SerializeField] float attackCooldown     = 1.5f;
+        [SerializeField] float attackHitDelay     = 0.4f;
         [SerializeField] float hitStaggerDuration = 0.5f; // 被弾時の硬直秒数
+
+        [Header("Combo / Dodge")]
+        [SerializeField] float strongAttackChance = 0.20f;  // ストロングコンボを選ぶ確率
+        [SerializeField] float aiSpecialChance    = 0.05f;  // ウェーブスペシャルを選ぶ確率
+        [SerializeField] float aiSpecialRange     = 5.0f;   // スペシャルを使う最大距離
+        [SerializeField] float dodgeProbability   = 0.30f;  // プレイヤー攻撃始動時にドッジする確率
+        [SerializeField] float aiDodgeCooldown    = 2.0f;   // ドッジのクールダウン（秒）
+        [SerializeField] float aiDodgeDuration    = 0.35f;  // ドッジの持続時間
+        [SerializeField] float aiDodgeSpeed       = 10f;    // ドッジ時の移動速度
 
         [Header("Movement")]
         [SerializeField] float chaseSpeed        = 4f;
@@ -59,18 +69,24 @@ namespace ActionGame
         NavMeshAgent             agent;
         Health                   health;
         EnemyAnimationController animCtrl;
+        EnemyCombat              combatActions;   // Enemy 専用コンボコンポーネント
+        ComboAttack              playerCombo;     // プレイヤーの攻撃状態を監視
         BTNode                   root;
         BTBlackboard             bb;
 
-        float staggerTimer = 0f;
-        bool  IsStaggered  => staggerTimer > 0f;
+        float staggerTimer       = 0f;
+        bool  IsStaggered        => staggerTimer > 0f;
+        bool  dodging            = false;
+        float dodgeCooldownEnd   = 0f;
+        bool  playerWasAttacking = false;
 
         // ─────────────────────────────────────────────────────────────
         void Start()
         {
-            agent    = GetComponent<NavMeshAgent>();
-            health   = GetComponent<Health>();
-            animCtrl = GetComponent<EnemyAnimationController>();
+            agent         = GetComponent<NavMeshAgent>();
+            health        = GetComponent<Health>();
+            animCtrl      = GetComponent<EnemyAnimationController>();
+            combatActions = GetComponent<EnemyCombat>();
 
             // null パトロールポイントを除去してタグで補完
             patrolPoints = System.Array.FindAll(
@@ -82,14 +98,27 @@ namespace ActionGame
             }
 
             var playerGO = GameObject.FindGameObjectWithTag("Player");
-            player = playerGO != null ? playerGO.transform : null;
+            player      = playerGO != null ? playerGO.transform : null;
+            playerCombo = playerGO != null ? playerGO.GetComponent<ComboAttack>() : null;
 
-            // Aggressive: 初速・クールダウンを調整
-            if (enemyType == EnemyType.Aggressive)
+            // タイプ別パラメータ調整
+            switch (enemyType)
             {
-                attackCooldown     = Mathf.Max(0.6f, attackCooldown * 0.6f);
-                hitStaggerDuration = 0.1f;
-                chaseSpeed        *= 1.4f;
+                case EnemyType.Aggressive:
+                    attackCooldown     = Mathf.Max(0.6f, attackCooldown * 0.6f);
+                    hitStaggerDuration = 0.1f;
+                    chaseSpeed        *= 1.4f;
+                    strongAttackChance = 0.40f;
+                    aiSpecialChance    = 0.05f;
+                    dodgeProbability   = 0.10f;
+                    break;
+                case EnemyType.Cautious:
+                    strongAttackChance = 0.15f;
+                    aiSpecialChance    = 0.25f;
+                    dodgeProbability   = 0.60f;
+                    break;
+                default: // Grunt
+                    break;
             }
 
             bb   = new BTBlackboard();
@@ -133,10 +162,11 @@ namespace ActionGame
         {
             var root = new BTSelector();
             root.AddChild(StaggerSequence());
+            root.AddChild(DodgeReactSequence());
 
             var attackSeq = new BTSequence();
             attackSeq.AddChild(new BTCondition(() => DistToPlayer() <= attackRange));
-            attackSeq.AddChild(new BTAction(FaceAndAttack));
+            attackSeq.AddChild(new BTAction(FaceAndAttackCombo));
             root.AddChild(attackSeq);
 
             var chaseSeq = new BTSequence();
@@ -152,14 +182,13 @@ namespace ActionGame
         {
             var root = new BTSelector();
             root.AddChild(StaggerSequence());
+            root.AddChild(DodgeReactSequence());
 
-            // 攻撃範囲を少し広めに設定
             var attackSeq = new BTSequence();
             attackSeq.AddChild(new BTCondition(() => DistToPlayer() <= attackRange * 1.2f));
-            attackSeq.AddChild(new BTAction(FaceAndAttack));
+            attackSeq.AddChild(new BTAction(FaceAndAttackCombo));
             root.AddChild(attackSeq);
 
-            // 検知範囲を無視して常に全速追跡
             root.AddChild(new BTAction(() => Chase(chaseSpeed)));
             return root;
         }
@@ -168,26 +197,23 @@ namespace ActionGame
         {
             var root = new BTSelector();
             root.AddChild(StaggerSequence());
+            root.AddChild(DodgeReactSequence());
 
-            // 攻撃後の後退タイマーが残っている間は後退
             var retreatAfterAtk = new BTSequence();
             retreatAfterAtk.AddChild(new BTCondition(() => Time.time < bb.Get<float>("retreatUntil", 0f)));
             retreatAfterAtk.AddChild(new BTAction(Retreat));
             root.AddChild(retreatAfterAtk);
 
-            // 近すぎる → 後退
             var tooClose = new BTSequence();
             tooClose.AddChild(new BTCondition(() => DistToPlayer() < preferredDist * 0.6f));
             tooClose.AddChild(new BTAction(Retreat));
             root.AddChild(tooClose);
 
-            // 攻撃圏内 → 攻撃（成功後 retreatUntil セット）
             var attackSeq = new BTSequence();
             attackSeq.AddChild(new BTCondition(() => DistToPlayer() <= attackRange));
-            attackSeq.AddChild(new BTAction(FaceAndAttackCautious));
+            attackSeq.AddChild(new BTAction(FaceAndAttackCautiousCombo));
             root.AddChild(attackSeq);
 
-            // 検知圏内 → 適正距離まで追跡 or ストレイフ
             var detectSeq = new BTSequence();
             detectSeq.AddChild(new BTCondition(() => DistToPlayer() <= detectionRange));
             detectSeq.AddChild(new BTAction(ChaseOrStrafe));
@@ -198,6 +224,25 @@ namespace ActionGame
         }
 
         // ── 共通ノード ────────────────────────────────────────────────
+
+        BTNode DodgeReactSequence()
+        {
+            var seq = new BTSequence();
+            seq.AddChild(new BTCondition(() =>
+            {
+                if (playerCombo == null || dodging || Time.time < dodgeCooldownEnd) return false;
+                bool isAttacking = playerCombo.IsLightAttacking || playerCombo.IsStrongAttacking;
+
+                bool risingEdge = isAttacking && !playerWasAttacking;
+                playerWasAttacking = isAttacking;
+
+                if (!risingEdge) return false;
+                if (DistToPlayer() > attackRange + 2f) return false;
+                return Random.value < dodgeProbability;
+            }));
+            seq.AddChild(new BTAction(ExecuteDodge));
+            return seq;
+        }
 
         BTNode StaggerSequence()
         {
@@ -223,31 +268,89 @@ namespace ActionGame
             transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
         }
 
-        NodeState FaceAndAttack()
+        NodeState FaceAndAttackCombo()
         {
             agent.isStopped = true;
             FacePlayer();
-            if (Time.time >= bb.Get<float>("nextAttack", 0f))
+            if (Time.time < bb.Get<float>("nextAttack", 0f)) return NodeState.Running;
+
+            bb.Set("nextAttack", Time.time + attackCooldown);
+
+            if (combatActions != null)
             {
-                bb.Set("nextAttack", Time.time + attackCooldown);
+                float roll = Random.value;
+                if (roll < aiSpecialChance && DistToPlayer() <= aiSpecialRange)
+                    combatActions.TriggerSpecial();
+                else if (roll < aiSpecialChance + strongAttackChance)
+                    combatActions.TriggerStrong();
+                else
+                    combatActions.TriggerLight();
+            }
+            else
+            {
                 animCtrl?.TriggerAttack();
                 StartCoroutine(ApplyAttackDamageDelayed(attackHitDelay));
             }
             return NodeState.Running;
         }
 
-        NodeState FaceAndAttackCautious()
+        NodeState FaceAndAttackCautiousCombo()
         {
             agent.isStopped = true;
             FacePlayer();
-            if (Time.time >= bb.Get<float>("nextAttack", 0f))
+            if (Time.time < bb.Get<float>("nextAttack", 0f)) return NodeState.Running;
+
+            bb.Set("nextAttack",   Time.time + attackCooldown);
+            bb.Set("retreatUntil", Time.time + retreatDuration);
+
+            if (combatActions != null)
             {
-                bb.Set("nextAttack",   Time.time + attackCooldown);
-                bb.Set("retreatUntil", Time.time + retreatDuration);
+                float roll = Random.value;
+                if (roll < aiSpecialChance && DistToPlayer() <= aiSpecialRange)
+                    combatActions.TriggerSpecial();
+                else if (roll < aiSpecialChance + strongAttackChance)
+                    combatActions.TriggerStrong();
+                else
+                    combatActions.TriggerLight();
+            }
+            else
+            {
                 animCtrl?.TriggerAttack();
                 StartCoroutine(ApplyAttackDamageDelayed(attackHitDelay));
             }
             return NodeState.Running;
+        }
+
+        NodeState ExecuteDodge()
+        {
+            if (!agent.enabled) return NodeState.Failure;
+
+            var away = player != null
+                ? (transform.position - player.position).normalized
+                : transform.forward;
+            float angle    = Random.Range(-70f, 70f);
+            var   dodgeDir = Quaternion.Euler(0f, angle, 0f) * away;
+
+            if (NavMesh.SamplePosition(transform.position + dodgeDir * 3f, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+            {
+                agent.isStopped = false;
+                agent.speed     = aiDodgeSpeed;
+                agent.SetDestination(hit.position);
+            }
+
+            animCtrl?.TriggerDodge();
+            StartCoroutine(DodgeCoroutine());
+            return NodeState.Running;
+        }
+
+        IEnumerator DodgeCoroutine()
+        {
+            dodging = true;
+            health?.SetInvincible(true);
+            yield return new WaitForSeconds(aiDodgeDuration);
+            health?.SetInvincible(false);
+            dodging          = false;
+            dodgeCooldownEnd = Time.time + aiDodgeCooldown;
         }
 
         NodeState Chase(float speed)
@@ -275,7 +378,6 @@ namespace ActionGame
 
         NodeState ChaseOrStrafe()
         {
-            // 適正距離より遠ければ追跡、近ければストレイフ
             return DistToPlayer() > preferredDist + 1.5f ? Chase(chaseSpeed) : Strafe();
         }
 
@@ -283,7 +385,6 @@ namespace ActionGame
         {
             if (!agent.enabled || player == null) return NodeState.Failure;
 
-            // 一定時間ごとにストレイフ方向を反転
             if (Time.time >= bb.Get<float>("strafeSwitch", 0f))
             {
                 float dir = bb.Get("strafeDir", 1f) * -1f;
@@ -302,7 +403,7 @@ namespace ActionGame
                 agent.speed     = strafeSpeed;
                 agent.SetDestination(hit.position);
             }
-            FacePlayer(); // ストレイフ中もプレイヤーを向く
+            FacePlayer();
             return NodeState.Running;
         }
 
@@ -362,7 +463,7 @@ namespace ActionGame
         void OnHealthChanged(float cur, float max)
         {
             if (cur < max && cur > 0f)
-                staggerTimer = hitStaggerDuration; // 被弾硬直
+                staggerTimer = hitStaggerDuration;
         }
 
         void OnDeath()

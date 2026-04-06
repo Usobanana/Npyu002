@@ -9,7 +9,7 @@ namespace ActionGame.Editor
 {
     public static class EnemySetupTool
     {
-        const string ControllerPath = "Assets/Animations/EnemyAnimator.controller";
+        const string ControllerPath = "Assets/Animations/SwordPlayerController.controller";
 
         // ---------------------------------------------------------------
         [MenuItem("Tools/ActionGame/Setup Enemy Animator Controller")]
@@ -90,10 +90,10 @@ namespace ActionGame.Editor
                 SetupEnemyAnimatorController();
             }
 
-            var xbotPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Characters/X Bot.fbx");
-            if (xbotPrefab == null)
+            var charPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/SwordAnimationPack/Prefabs/9CG_Sword.prefab");
+            if (charPrefab == null)
             {
-                Debug.LogError("[EnemySetupTool] X Bot.fbx not found.");
+                Debug.LogError("[EnemySetupTool] 9CG_Sword.prefab not found.");
                 return;
             }
 
@@ -117,31 +117,72 @@ namespace ActionGame.Editor
 
             foreach (var enemy in enemies)
             {
-                SetupSingleEnemy(enemy, xbotPrefab, controller);
+                SetupSingleEnemy(enemy, charPrefab, controller);
             }
 
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log($"[EnemySetupTool] Setup complete for {enemies.Length} enemies.");
         }
 
-        static void SetupSingleEnemy(GameObject enemy, GameObject xbotPrefab, RuntimeAnimatorController controller)
+        static void SetupSingleEnemy(GameObject enemy, GameObject charPrefab, RuntimeAnimatorController controller)
         {
-            // 既存の X Bot 子を削除
-            var existing = enemy.transform.Find("X Bot");
-            if (existing != null) Object.DestroyImmediate(existing.gameObject);
+            // 既存のモデル子を削除（X Bot / 9CG_Sword どちらでも対応）
+            foreach (var childName in new[] { "X Bot", "9CG_Sword" })
+            {
+                var existing = enemy.transform.Find(childName);
+                if (existing != null) Object.DestroyImmediate(existing.gameObject);
+            }
 
-            // X Bot を子として配置
-            var xbotGO = (GameObject)PrefabUtility.InstantiatePrefab(xbotPrefab, enemy.transform);
-            xbotGO.name = "X Bot";
-            xbotGO.transform.localPosition = new Vector3(0f, -1f, 0f);
-            xbotGO.transform.localRotation = Quaternion.identity;
-            xbotGO.transform.localScale    = Vector3.one;
+            // キャラクターモデルを子として配置
+            var charGO = (GameObject)PrefabUtility.InstantiatePrefab(charPrefab, enemy.transform);
+            charGO.name = charPrefab.name;
+            charGO.transform.localPosition = Vector3.zero;
+            charGO.transform.localRotation = Quaternion.identity;
+            charGO.transform.localScale    = Vector3.one;
 
             // Animator 設定
-            var animator = xbotGO.GetComponent<Animator>();
-            if (animator == null) animator = xbotGO.AddComponent<Animator>();
+            var animator = charGO.GetComponentInChildren<Animator>();
+            if (animator == null) animator = charGO.AddComponent<Animator>();
             animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false;
+
+            // Avatar をアサイン
+            var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(
+                "Assets/SwordAnimationPack/Model/9CG_Sword.FBX");
+            if (avatar != null)
+                animator.avatar = avatar;
+
+            // EnemyMat（URP対応）を SkinnedMeshRenderer（キャラ本体）に適用
+            var enemyMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/EnemyMat.mat");
+            if (enemyMat != null)
+            {
+                foreach (var smr in charGO.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    var mats = new Material[smr.sharedMaterials.Length];
+                    for (int i = 0; i < mats.Length; i++) mats[i] = enemyMat;
+                    smr.sharedMaterials = mats;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[EnemySetupTool] EnemyMat.mat が見つかりません。");
+            }
+
+            // Sword_URP.mat を MeshRenderer（剣）に適用
+            var swordMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/SwordAnimationPack/Materials/Sword_URP.mat");
+            if (swordMat != null)
+            {
+                foreach (var mr2 in charGO.GetComponentsInChildren<MeshRenderer>())
+                {
+                    var mats = new Material[mr2.sharedMaterials.Length];
+                    for (int i = 0; i < mats.Length; i++) mats[i] = swordMat;
+                    mr2.sharedMaterials = mats;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[EnemySetupTool] Sword_URP.mat が見つかりません。");
+            }
 
             // 親カプセルの MeshRenderer を非表示
             var mr = enemy.GetComponent<MeshRenderer>();

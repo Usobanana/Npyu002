@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 4575992340831240826}
   - component: {fileID: 5424703856789325502}
   - component: {fileID: 3256087579861553642}
+  - component: {fileID: -3218366902320592445}
   m_Layer: 6
   m_Name: Enemy
   m_TagString: Enemy
@@ -164,12 +165,73 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9b640c3bd899ce4e90b80dc33413b0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ActionGame.EnemyBT
+  enemyType: 0
   detectionRange: 12
   attackRange: 2
+  preferredDist: 4
   attackDamage: 10
   attackCooldown: 1.5
+  attackHitDelay: 0.4
+  hitStaggerDuration: 0.5
+  strongAttackChance: 0.2
+  aiSpecialChance: 0.05
+  aiSpecialRange: 5
+  dodgeProbability: 0.3
+  aiDodgeCooldown: 2
+  aiDodgeDuration: 0.35
+  aiDodgeSpeed: 10
+  chaseSpeed: 4
+  strafeSpeed: 2.5
+  retreatDuration: 0.8
   patrolPoints:
   - {fileID: 0}
   - {fileID: 0}
   patrolWaitTime: 2
   scoreOnDeath: 100
+--- !u!114 &-3218366902320592445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7369545310581800606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fa5470dcf963428b745f925b11b3eda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionGame.EnemyCombat
+  lightSteps:
+  - trigger: Attack1
+    damage: 10
+    hitDelay: 0.25
+  - trigger: Attack2
+    damage: 12
+    hitDelay: 0.25
+  - trigger: Attack3
+    damage: 15
+    hitDelay: 0.4
+  - trigger: Attack4
+    damage: 20
+    hitDelay: 0.4
+  strongSteps:
+  - trigger: SAtk1
+    damage: 18
+    hitDelay: 0.35
+  - trigger: SAtk2
+    damage: 20
+    hitDelay: 0.35
+  - trigger: SAtk3
+    damage: 25
+    hitDelay: 0.45
+  - trigger: SAtk4
+    damage: 35
+    hitDelay: 0.5
+  waveAttackTrigger: WaveAtk
+  waveDamage: 30
+  waveRange: 5
+  waveHitDelay: 0.4
+  specialCooldown: 8
+  comboWindow: 0.8
+  comboResetTime: 1.2
+  attackRange: 2
+  attackOffset: 1
