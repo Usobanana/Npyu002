@@ -13,5 +13,9 @@ Npyu002Unity/*.sln
 # VS Code
 Npyu002Unity/.vscode/
 
+# Asset Store (large binary packs)
+Npyu002Unity/Assets/SwordAnimationPack/
+Npyu002Unity/Assets/SwordAnimationPack.meta
+
 # Claude
 .claude/
